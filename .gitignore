@@ -1,0 +1,58 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Output of `go build`
+/bin/
+/build/
+/dist/
+
+# Output of `go test`
+*.cover
+*.coverprofile
+
+# Dependency directories (if you use vendoring)
+/vendor/
+
+# IDE/editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*~
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment/config files
+.env
+.env.*
+*.local
+*.secret
+
+# Go module cache (just in case)
+/pkg/mod/
+
+# Coverage reports
+coverage.out
+
+# Mockgen or generated files (adjust as needed)
+/mock/
+/mocks/
+*.gen.go
+
+# Swagger docs (optional)
+/docs/swagger/*
+
+# GORM Gen files (if you're using it)
+generated/
