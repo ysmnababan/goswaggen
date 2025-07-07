@@ -17,34 +17,44 @@ import (
 	psr "go/parser"
 )
 
+// this is comment
 func bar(t string) {
 	fmt.Println(time.Now())
 }`
-	f, err := parser.ParseFile(fset, "", src, 0)
+	_ = src
+
+	f, err := parser.ParseFile(
+		fset,
+		// "",
+		"./../example/learn-go/internals/app/example_feat/controller.go",
+		nil,
+		0)
+
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 	for _, val := range f.Imports {
 		fmt.Println(val.Path.Value)
-		fmt.Println(val.Name)
+		name := val.Name
+		if name != nil {
+			fmt.Println(val.Name)
+		}
 	}
 
-	for _, val := range f.Decls {
-		fmt.Println(val.Pos(), val.End())
-	}
+	// for _, val := range f.Decls {
+	// fmt.Println(val)
+	// fmt.Println(val.Pos(), val.End())
+	// }
 	// ast.Print(fset, f)
 
 	ast.Inspect(f, func(n ast.Node) bool {
 		fun, ok := n.(*ast.FuncDecl)
 		if ok {
-			// ast.Print(fset, fun)
-			fmt.Println("here")
-			// fmt.Println(fun.Doc)
 			fmt.Println(fun.Name.Name)
-			fmt.Println(fun.Type.Params.List[0].Type)
 			fmt.Println(fun.Type.Params.List[0].Names)
-			// fmt.Println(fun.Type.Results.List[0])
+			fmt.Println(fun.Type.Params.List[0].Type)
+			fmt.Println(fun.Doc.Text())
 		}
 		return true
 	})
