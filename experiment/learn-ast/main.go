@@ -28,7 +28,7 @@ func bar(t string) {
 		// "",
 		"./../example/learn-go/internals/app/example_feat/controller.go",
 		nil,
-		0)
+		parser.ParseComments)
 
 	if err != nil {
 		fmt.Println(err)
@@ -48,13 +48,28 @@ func bar(t string) {
 	// }
 	// ast.Print(fset, f)
 
+	var functionPos int
 	ast.Inspect(f, func(n ast.Node) bool {
 		fun, ok := n.(*ast.FuncDecl)
-		if ok {
+
+		if ok && fun.Name.Name == "Login" {
 			fmt.Println(fun.Name.Name)
-			fmt.Println(fun.Type.Params.List[0].Names)
+			fmt.Println(fun.Type.Params.List[0].Names[0].Name)
 			fmt.Println(fun.Type.Params.List[0].Type)
-			fmt.Println(fun.Doc.Text())
+			fmt.Println(fun.Type.Results.List[0].Names)
+			fmt.Println(fun.Type.Results.List[0].Type)
+			functionPos = fset.Position(fun.Type.Func).Line
+			fmt.Println("function pos:", functionPos)
+		}
+		com, ok := n.(*ast.CommentGroup)
+		if ok {
+			var commentBlockEnd int = fset.Position(com.End()).Line
+			fmt.Println("comment block end:", commentBlockEnd)
+			if functionPos == commentBlockEnd+1 {
+				fmt.Println(com.Text())
+			}
+			// fmt.Println(fset.Position(com.End()).Line)
+			// ast.Print(fset, com.List)
 		}
 		return true
 	})
