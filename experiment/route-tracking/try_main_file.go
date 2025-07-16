@@ -14,12 +14,13 @@ func TryFindMainFile() {
 	cfg := &packages.Config{
 		Mode: packages.NeedName |
 			packages.NeedFiles |
-			packages.NeedCompiledGoFiles |
-			packages.NeedImports |
-			packages.NeedDeps |
-			packages.NeedTypes |
-			packages.NeedSyntax |
-			packages.NeedTypesInfo,
+			// packages.NeedCompiledGoFiles |
+			// packages.NeedImports |
+			// packages.NeedDeps |
+			// packages.NeedTypes |
+			packages.NeedModule |
+			packages.NeedSyntax,
+		// packages.NeedTypesInfo,
 		Dir:  "../example/learn-go/", // relative to where you run `go run`
 		Fset: fset,
 	}
