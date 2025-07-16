@@ -50,7 +50,7 @@ func TryTraverse() {
 	}
 	fmt.Println("FRAMEWORK import name", fmwork)
 
-	callExp := FindFmWorkInitExpression(mainFile, fmwork)
+	callExp := FindFmWorkInitExpression(mainFile, fmwork, "New")
 	if callExp == nil {
 		fmt.Println("Framework initializer is not found")
 		return
@@ -81,26 +81,38 @@ func FindFrameworkImportIdentName(file *ast.File, fmworkName string) string {
 	return fmworkIdent
 }
 
-// find variable that initialize the framework,
-// should be 'e' for e:= echo.New()
-func FindFmWorkInitExpression(file *ast.File, fmworkName string) *ast.AssignStmt {
-	var initAssignStmt *ast.AssignStmt
+// FindFrameworkInitAssignment searches for an assignment like:
+// e := <frameworkName>.<functionName>()
+// For example: e := echo.New()
+func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName string) *ast.AssignStmt {
+	var result *ast.AssignStmt
 	ast.Inspect(file, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
-		if ok && len(assign.Rhs) == 1 {
-			callExpr, ok := assign.Rhs[0].(*ast.CallExpr)
-			if ok {
-				if call, ok := callExpr.Fun.(*ast.SelectorExpr); ok {
-					if sel, ok := call.X.(*ast.Ident); ok &&
-						sel.Name == fmworkName &&
-						call.Sel.Name == "New" {
-						initAssignStmt = assign
-						return false
-					}
-				}
-			}
+		if !ok || len(assign.Rhs) != 1 {
+			return true
 		}
+
+		callExpr, ok := assign.Rhs[0].(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+
+		selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+
+		ident, ok := selExpr.X.(*ast.Ident)
+		if !ok {
+			return true
+		}
+
+		if ident.Name == frameworkName && selExpr.Sel.Name == functionName {
+			result = assign
+			return false // stop walking
+		}
+
 		return true
 	})
-	return initAssignStmt
+	return result
 }
