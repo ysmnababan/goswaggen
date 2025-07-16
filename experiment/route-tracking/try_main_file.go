@@ -45,7 +45,7 @@ func TryFindMainFile() {
 	}
 
 	var echoIdent string
-	echoImport := FindLibrary(imports, "github.com/labstack/echo/v4")
+	echoImport := FindLibrary(imports, "echo")
 	if echoImport != nil {
 		if echoImport.Name != nil {
 			echoIdent = echoImport.Name.Name
@@ -57,8 +57,9 @@ func TryFindMainFile() {
 }
 
 func FindLibrary(imports []*ast.ImportSpec, targetName string) *ast.ImportSpec {
+	path := IMPORT_PATH_VALUE[targetName]
 	for _, val := range imports {
-		if strings.Contains(val.Path.Value, targetName) {
+		if strings.Contains(val.Path.Value, path) {
 			return val
 		}
 	}
