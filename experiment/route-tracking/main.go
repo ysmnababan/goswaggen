@@ -33,5 +33,5 @@ func TryLoadAll() {
 var fset *token.FileSet
 
 func main() {
-	TryFindMainFile()
+	TryTraverse()
 }
