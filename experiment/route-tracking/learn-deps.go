@@ -64,12 +64,14 @@ func TryTraverse() {
 	fmt.Println("identName: ", identName)
 	callExps := FindHandlerRegistrationNode(mainFile, identName)
 	if len(callExps) == 0 {
-		fmt.Println("can't find hander registration")
+		fmt.Println("can't find handler registration")
 		return
 	}
+
+	// check types of `ast.Ident`
 	if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
 		obj := mainPkg.TypesInfo.Uses[ident]
-		fmt.Println("hello", obj)
+		fmt.Printf("name:%v, type:%v, obj:%v, parent:%v\n", obj.Name(), obj.Type(), obj.Pkg(), obj.Parent())
 	}
 	// fmt.Println(callExps[0])
 	// httpserverImport, ok := mainPkg.Imports[""]
@@ -162,15 +164,10 @@ func FindHandlerRegistrationNode(file *ast.File, identName string) []*ast.CallEx
 		if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
 			return true
 		}
-		var ident *ast.Ident
-		if ident, ok = callExp.Args[1].(*ast.Ident); !ok {
+		if _, ok = callExp.Args[1].(*ast.Ident); !ok {
 			return true
 		}
-		fmt.Println(ident.Name)
 		result = append(result, callExp)
-
-		// obj := types.Info.Uses[ident]
-		// _ = obj
 		return false
 	})
 	return result
