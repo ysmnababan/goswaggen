@@ -9,6 +9,8 @@ This is the To-do lists for the `goswaggen` project.
 - [X] Create method for associate the function and its comment block
 - [X] How to parse the function param (other than`&{echo Context}`)
 - [X] Learn how to use `go/packages`
+- [ ] Experiment with `go/types` object.
+- [ ] Find handler declaration position
 - [ ] Get all function that use import
 - [ ] Look up what param need to cover
 - [ ] Ensure the package has correct import lib for the handler
