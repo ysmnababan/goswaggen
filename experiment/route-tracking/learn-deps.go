@@ -50,12 +50,18 @@ func TryTraverse() {
 	}
 	fmt.Println("FRAMEWORK import name", fmwork)
 
-	callExp := FindFmWorkInitExpression(mainFile, fmwork, "New")
-	if callExp == nil {
+	initCallExp, identName := FindFmWorkInitExpression(mainFile, fmwork, "New")
+	if initCallExp == nil {
 		fmt.Println("Framework initializer is not found")
 		return
 	}
-	fmt.Println(callExp.Lhs[0])
+	fmt.Println("identName: ", identName)
+	callExps := FindHandlerRegistrationNode(mainFile, identName)
+	if len(callExps) == 0 {
+		fmt.Println("can't find hander registration")
+		return
+	}
+	// fmt.Println(callExps[0])
 	// httpserverImport, ok := mainPkg.Imports[""]
 	// if !ok {
 	// log.Println("echo library import not found")
@@ -84,8 +90,10 @@ func FindFrameworkImportIdentName(file *ast.File, fmworkName string) string {
 // FindFrameworkInitAssignment searches for an assignment like:
 // e := <frameworkName>.<functionName>()
 // For example: e := echo.New()
-func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName string) *ast.AssignStmt {
+// output => assign stmt and 'e'
+func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName string) (*ast.AssignStmt, string) {
 	var result *ast.AssignStmt
+	var identName string
 	ast.Inspect(file, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
 		if !ok || len(assign.Rhs) != 1 {
@@ -109,10 +117,60 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 
 		if ident.Name == frameworkName && selExpr.Sel.Name == functionName {
 			result = assign
+			identName = assign.Lhs[0].(*ast.Ident).Name
 			return false // stop walking
 		}
 
 		return true
 	})
+	return result, identName
+}
+
+// find all simple handler registration
+// i.e e.GET("/next-test", handlerTest)
+func FindHandlerRegistrationNode(file *ast.File, identName string) []*ast.CallExpr {
+	result := []*ast.CallExpr{}
+	ast.Inspect(file, func(n ast.Node) bool {
+		callExp, ok := n.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		if len(callExp.Args) < 1 {
+			return true
+		}
+		selExp, ok := callExp.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return true
+		}
+		if x, ok := selExp.X.(*ast.Ident); !ok || x.Name != identName {
+			return true
+		}
+
+		if !IsHTTPMethod(selExp.Sel.Name) {
+			return true
+		}
+		if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
+			return true
+		}
+		var ident *ast.Ident
+		if ident, ok = callExp.Args[1].(*ast.Ident); !ok {
+			return true
+		}
+		fmt.Println(ident.Name)
+		result = append(result, callExp)
+
+		// obj := types.Info.Uses[ident]
+		// _ = obj
+		return false
+	})
 	return result
+}
+
+func IsHTTPMethod(method string) bool {
+	return method == "GET" ||
+		method == "POST" ||
+		method == "PUT" ||
+		method == "DELETE" ||
+		method == "PATCH" ||
+		method == "HEAD"
 }
