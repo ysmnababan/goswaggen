@@ -35,6 +35,7 @@ func TryTraverse() {
 	mainPkg := pkgs[0]
 	var mainFunc *ast.FuncDecl
 	var mainFile *ast.File
+
 	// find 'main.go' file
 	for i, file := range mainPkg.Syntax {
 		fmt.Println(mainPkg.GoFiles[i], "=>>")
@@ -42,6 +43,11 @@ func TryTraverse() {
 		if mainFunc != nil {
 			mainFile = file
 			break
+		}
+	}
+	for id, obj := range mainPkg.TypesInfo.Uses {
+		if obj != nil {
+			fmt.Printf("%s: %q uses %v\n", cfg.Fset.Position(id.Pos()), id.Name, obj)
 		}
 	}
 	fmwork := FindFrameworkImportIdentName(mainFile, "echo")
@@ -60,6 +66,10 @@ func TryTraverse() {
 	if len(callExps) == 0 {
 		fmt.Println("can't find hander registration")
 		return
+	}
+	if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
+		obj := mainPkg.TypesInfo.Uses[ident]
+		fmt.Println("hello", obj)
 	}
 	// fmt.Println(callExps[0])
 	// httpserverImport, ok := mainPkg.Imports[""]
