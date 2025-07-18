@@ -70,7 +70,7 @@ func TryTraverse() {
 	}
 
 	for k, val := range fnObjMap {
-		fmt.Printf("%v IS REGISTERED IN %v", val, k)
+		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val, k)
 	}
 	// check types of `ast.Ident`
 	// if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
@@ -143,9 +143,11 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 }
 
 // find all simple handler registration
-// i.e e.GET("/next-test", handlerTest)
 // only contains the type of function (not the ast node)
 // need to be inspected later on
+// pattern that can be recognized:
+// e.GET("/next-test", handlerTest)
+// e.POST("/dummy", dummyhandler.JustDummyHandler)
 func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) map[*types.Func]*ast.CallExpr {
 	result := make(map[*types.Func]*ast.CallExpr)
 	ast.Inspect(file, func(n ast.Node) bool {
@@ -170,17 +172,31 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 		if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
 			return true
 		}
-		var ident *ast.Ident
-		if ident, ok = callExp.Args[1].(*ast.Ident); !ok {
+		handlerFuncParam := callExp.Args[1]
+		switch t := handlerFuncParam.(type) {
+		case *ast.Ident:
+			obj, ok := mainPkg.TypesInfo.Uses[t]
+			if !ok {
+				return true
+			}
+			fn, ok := obj.(*types.Func)
+			if !ok {
+				return true
+			}
+			result[fn] = callExp
+		case *ast.SelectorExpr:
+			obj, ok := mainPkg.TypesInfo.Uses[t.Sel]
+			if !ok {
+				return true
+			}
+			fn, ok := obj.(*types.Func)
+			if !ok {
+				return true
+			}
+			result[fn] = callExp
+		default:
 			return true
 		}
-
-		obj := mainPkg.TypesInfo.Uses[ident]
-		fn, ok := obj.(*types.Func)
-		if !ok {
-			return true
-		}
-		result[fn] = callExp
 		return false
 	})
 
