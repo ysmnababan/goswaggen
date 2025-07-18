@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"log"
 
 	"golang.org/x/tools/go/packages"
@@ -45,11 +46,11 @@ func TryTraverse() {
 			break
 		}
 	}
-	for id, obj := range mainPkg.TypesInfo.Uses {
-		if obj != nil {
-			fmt.Printf("%s: %q uses %v\n", cfg.Fset.Position(id.Pos()), id.Name, obj)
-		}
-	}
+	// for id, obj := range mainPkg.TypesInfo.Uses {
+	// 	if obj != nil {
+	// 		fmt.Printf("%s: %q uses %v\n", cfg.Fset.Position(id.Pos()), id.Name, obj)
+	// 	}
+	// }
 	fmwork := FindFrameworkImportIdentName(mainFile, "echo")
 	if len(fmwork) == 0 {
 		return
@@ -62,17 +63,20 @@ func TryTraverse() {
 		return
 	}
 	fmt.Println("identName: ", identName)
-	callExps := FindHandlerRegistrationNode(mainFile, identName)
-	if len(callExps) == 0 {
+	fnObjMap := FindHandlerRegistrationNode(mainPkg, mainFile, identName)
+	if len(fnObjMap) == 0 {
 		fmt.Println("can't find handler registration")
 		return
 	}
 
-	// check types of `ast.Ident`
-	if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
-		obj := mainPkg.TypesInfo.Uses[ident]
-		fmt.Printf("name:%v, type:%v, obj:%v, parent:%v\n", obj.Name(), obj.Type(), obj.Pkg(), obj.Parent())
+	for k, val := range fnObjMap {
+		fmt.Printf("%v IS REGISTERED IN %v", val, k)
 	}
+	// check types of `ast.Ident`
+	// if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
+	// 	obj := mainPkg.TypesInfo.Uses[ident]
+	// 	fmt.Printf("name:%v, type:%v, obj:%v, parent:%v\n", obj.Name(), obj.Type().String(), obj.Pkg(), obj.Parent())
+	// }
 	// fmt.Println(callExps[0])
 	// httpserverImport, ok := mainPkg.Imports[""]
 	// if !ok {
@@ -140,8 +144,10 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 
 // find all simple handler registration
 // i.e e.GET("/next-test", handlerTest)
-func FindHandlerRegistrationNode(file *ast.File, identName string) []*ast.CallExpr {
-	result := []*ast.CallExpr{}
+// only contains the type of function (not the ast node)
+// need to be inspected later on
+func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) map[*types.Func]*ast.CallExpr {
+	result := make(map[*types.Func]*ast.CallExpr)
 	ast.Inspect(file, func(n ast.Node) bool {
 		callExp, ok := n.(*ast.CallExpr)
 		if !ok {
@@ -164,12 +170,20 @@ func FindHandlerRegistrationNode(file *ast.File, identName string) []*ast.CallEx
 		if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
 			return true
 		}
-		if _, ok = callExp.Args[1].(*ast.Ident); !ok {
+		var ident *ast.Ident
+		if ident, ok = callExp.Args[1].(*ast.Ident); !ok {
 			return true
 		}
-		result = append(result, callExp)
+
+		obj := mainPkg.TypesInfo.Uses[ident]
+		fn, ok := obj.(*types.Func)
+		if !ok {
+			return true
+		}
+		result[fn] = callExp
 		return false
 	})
+
 	return result
 }
 
