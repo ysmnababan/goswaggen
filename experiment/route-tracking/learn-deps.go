@@ -70,7 +70,7 @@ func TryTraverse() {
 	}
 
 	for k, val := range fnObjMap {
-		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val, k)
+		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val.Fun, k)
 	}
 	// check types of `ast.Ident`
 	// if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
@@ -158,42 +158,26 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 		if len(callExp.Args) < 1 {
 			return true
 		}
-		selExp, ok := callExp.Fun.(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		if x, ok := selExp.X.(*ast.Ident); !ok || x.Name != identName {
-			return true
-		}
-
-		if !IsHTTPMethod(selExp.Sel.Name) {
-			return true
-		}
-		if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
-			return true
-		}
-		handlerFuncParam := callExp.Args[1]
-		switch t := handlerFuncParam.(type) {
-		case *ast.Ident:
-			obj, ok := mainPkg.TypesInfo.Uses[t]
-			if !ok {
-				return true
-			}
-			fn, ok := obj.(*types.Func)
-			if !ok {
-				return true
-			}
-			result[fn] = callExp
+		switch t := callExp.Fun.(type) {
 		case *ast.SelectorExpr:
-			obj, ok := mainPkg.TypesInfo.Uses[t.Sel]
-			if !ok {
+			// here
+			if x, ok := t.X.(*ast.Ident); !ok || x.Name != identName {
 				return true
 			}
-			fn, ok := obj.(*types.Func)
+			if !IsHTTPMethod(t.Sel.Name) {
+				return true
+			}
+			if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
+				return true
+			}
+			fn, ok := resolveHandlerExpr(mainPkg, callExp.Args[1])
 			if !ok {
 				return true
 			}
 			result[fn] = callExp
+		case *ast.Ident:
+			// TODO
+			// direct function call, i.e: RegisterEcho(e, some-param)
 		default:
 			return true
 		}
@@ -201,6 +185,36 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 	})
 
 	return result
+}
+
+// Resolve the func object
+// i.e: e.GET("/next-test", handler)
+// the 'handler' param can be direct handler or '<somepackage>.handler
+func resolveHandlerExpr(pkg *packages.Package, expr ast.Expr) (*types.Func, bool) {
+	var fn *types.Func
+	switch t := expr.(type) {
+	case *ast.Ident: // i.e: e.GET("/next-test", handlerTest)
+		obj, ok := pkg.TypesInfo.Uses[t]
+		if !ok {
+			return nil, false
+		}
+		fn, ok = obj.(*types.Func)
+		if !ok {
+			return nil, false
+		}
+	case *ast.SelectorExpr: // i.e: e.POST("/dummy", dummyhandler.JustDummyHandler)
+		obj, ok := pkg.TypesInfo.Uses[t.Sel]
+		if !ok {
+			return nil, false
+		}
+		fn, ok = obj.(*types.Func)
+		if !ok {
+			return nil, false
+		}
+	default:
+		return nil, false
+	}
+	return fn, true
 }
 
 func IsHTTPMethod(method string) bool {
