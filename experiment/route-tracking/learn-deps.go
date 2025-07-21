@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -209,6 +210,7 @@ func handleImportedFunctionRegistration(mainPkg *packages.Package, exp *ast.Call
 }
 
 func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+	
 	return nil, false
 }
 
@@ -220,24 +222,74 @@ func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, ident
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
 func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) []*HandlerRegistration {
 	out := []*HandlerRegistration{}
+	groupPath := make(map[string]string)
 	ast.Inspect(file, func(n ast.Node) bool {
-		callExp, ok := n.(*ast.CallExpr)
-		if !ok {
-			return true
-		}
-		if len(callExp.Args) < 1 {
-			return true
-		}
-		for _, fn := range registrationHandler {
-			handlerReg, ok := fn(mainPkg, callExp, identName)
-			if ok {
-				out = append(out, handlerReg)
-				return false
+		switch t := n.(type) {
+		case *ast.CallExpr: // this is for registration with `echo.echo`
+			if len(t.Args) < 1 {
+				return true
 			}
-		}
-		return false
-	})
+			for _, fn := range registrationHandler {
+				handlerReg, ok := fn(mainPkg, t, identName)
+				if ok {
+					out = append(out, handlerReg)
+					fmt.Println(groupPath)
+					return false
+				}
+			}
+			return false
+		case *ast.AssignStmt: // this is for registration for `echo.Group`
+			if len(t.Lhs) > 1 || len(t.Rhs) > 1 {
+				return true
+			}
+			lhs, ok := t.Lhs[0].(*ast.Ident)
+			if !ok {
+				return true
+			}
+			callExpr, ok := t.Rhs[0].(*ast.CallExpr)
+			if !ok {
+				return true
+			}
 
+			if len(callExpr.Args) == 0 {
+				return true
+			}
+
+			route, ok := callExpr.Args[0].(*ast.BasicLit)
+			if !ok {
+				return true
+			}
+			selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			if selExpr.Sel.Name != "Group" {
+				return true
+			}
+			ident, ok := selExpr.X.(*ast.Ident)
+			if !ok {
+				return true
+			}
+			if obj, ok := mainPkg.TypesInfo.Uses[ident]; ok {
+				if obj.Type().String() == ECHO_VARIABLE_TYPE {
+					groupPath[lhs.Name] = strings.Trim(route.Value, `"`)
+					return false
+				}
+				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
+					parentPath := groupPath[ident.Name]
+					groupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
+					return false
+				}
+				return true
+			}
+			return true
+		default:
+			return true
+		}
+	})
+	for k, val := range groupPath {
+		fmt.Printf("%s ==> %s\n", k, val)
+	}
 	return out
 }
 
