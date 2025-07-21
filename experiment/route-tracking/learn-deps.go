@@ -142,6 +142,22 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 	return result, identName
 }
 
+func handleDirectRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+	return nil, false
+}
+
+func handleFunctionRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
+	return nil, false
+}
+
+func handleImportedFunctionRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
+	return nil, false
+}
+
+func handleGroupRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
+	return nil, false
+}
+
 // find all simple handler registration
 // only contains the type of function (not the ast node)
 // need to be inspected later on
@@ -176,8 +192,15 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 			}
 			result[fn] = callExp
 		case *ast.Ident:
-			// TODO
-			// direct function call, i.e: RegisterEcho(e, some-param)
+			obj, ok := mainPkg.TypesInfo.Uses[t]
+			if !ok {
+				return true
+			}
+			fn, ok := obj.(*types.Func)
+			if !ok {
+				return true
+			}
+			result[fn] = callExp
 		default:
 			return true
 		}
