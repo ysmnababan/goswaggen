@@ -11,7 +11,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-var registrationHandler = []func(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool){
+var registrationHandler = []func(ctx *RegistrationContext) (*HandlerRegistration, bool){
 	handleDirectRegistration,
 	handleFunctionRegistration,
 	handleImportedFunctionRegistration,
@@ -78,7 +78,8 @@ func TryTraverse() {
 	}
 
 	for _, val := range handlerRegs {
-		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val.Call.Fun, val.Func)
+		// fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val.Call.Fun, val.Func)
+		val.Print()
 	}
 	// check types of `ast.Ident`
 	// if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
@@ -153,12 +154,22 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 // target pattern that can be recognized:
 // e.GET("/next-test", handlerTest)
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
-func handleDirectRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+func handleDirectRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
+	mainPkg := ctx.MainPkg
+	exp := ctx.Expr
 	t, ok := exp.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return nil, false
 	}
-	if x, ok := t.X.(*ast.Ident); !ok || x.Name != identName {
+	x, ok := t.X.(*ast.Ident)
+	if !ok {
+		return nil, false
+	}
+	obj, ok := mainPkg.TypesInfo.Uses[x]
+	if !ok {
+		return nil, false
+	}
+	if obj.Type().String() != ECHO_VARIABLE_TYPE {
 		return nil, false
 	}
 	if !IsHTTPMethod(t.Sel.Name) {
@@ -172,17 +183,18 @@ func handleDirectRegistration(mainPkg *packages.Package, exp *ast.CallExpr, iden
 		return nil, false
 	}
 	out := &HandlerRegistration{
-		Func:      fn,
-		Call:      exp,
-		IsDirect:  true,
-		GroupPath: []string{},
+		Func:     fn,
+		Call:     exp,
+		IsDirect: true,
 	}
 	return out, true
 }
 
 // target pattern that can be recognized:
 // RegisterEcho(e, "ignore-this")
-func handleFunctionRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
+	mainPkg := ctx.MainPkg
+	exp := ctx.Expr
 	t, ok := exp.Fun.(*ast.Ident)
 	if !ok {
 		return nil, false
@@ -197,24 +209,24 @@ func handleFunctionRegistration(mainPkg *packages.Package, exp *ast.CallExpr, id
 		return nil, false
 	}
 	out := &HandlerRegistration{
-		Func:      fn,
-		Call:      exp,
-		IsDirect:  false,
-		GroupPath: []string{},
+		Func:     fn,
+		Call:     exp,
+		IsDirect: false,
 	}
 	return out, true
 }
 
-func handleImportedFunctionRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+func handleImportedFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
 	return nil, false
 }
 
+// handleGroupRegistration
 // search for registration with path like this:
-//
-//	second_group := first_group.Group("/second")
-//
+// second_group := first_group.Group("/second")
 // second_group.GET("/lol2", HandlerForSecondGroup)
-func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
+	mainPkg := ctx.MainPkg
+	exp := ctx.Expr
 	t, ok := exp.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return nil, false
@@ -240,11 +252,12 @@ func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, ident
 	if !ok {
 		return nil, false
 	}
+	path := ctx.GroupPath[obj.Name()]
 	out := &HandlerRegistration{
-		Func:      fn,
-		Call:      exp,
-		IsDirect:  true,
-		GroupPath: []string{},
+		Func:     fn,
+		Call:     exp,
+		IsDirect: true,
+		BasePath: path,
 	}
 	return out, true
 }
@@ -257,18 +270,21 @@ func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, ident
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
 func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) []*HandlerRegistration {
 	out := []*HandlerRegistration{}
-	groupPath := make(map[string]string)
+	ctx := RegistrationContext{
+		MainPkg:   mainPkg,
+		GroupPath: make(map[string]string),
+	}
 	ast.Inspect(file, func(n ast.Node) bool {
 		switch t := n.(type) {
 		case *ast.CallExpr: // this is for registration with `echo.echo`
 			if len(t.Args) < 1 {
 				return true
 			}
+			ctx.Expr = t
 			for _, fn := range registrationHandler {
-				handlerReg, ok := fn(mainPkg, t, identName)
+				handlerReg, ok := fn(&ctx)
 				if ok {
 					out = append(out, handlerReg)
-					fmt.Println(groupPath)
 					return false
 				}
 			}
@@ -307,12 +323,12 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 			}
 			if obj, ok := mainPkg.TypesInfo.Uses[ident]; ok {
 				if obj.Type().String() == ECHO_VARIABLE_TYPE {
-					groupPath[lhs.Name] = strings.Trim(route.Value, `"`)
+					ctx.GroupPath[lhs.Name] = strings.Trim(route.Value, `"`)
 					return false
 				}
 				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
-					parentPath := groupPath[ident.Name]
-					groupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
+					parentPath := ctx.GroupPath[ident.Name]
+					ctx.GroupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
 					return false
 				}
 				return true
@@ -322,9 +338,6 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 			return true
 		}
 	})
-	for k, val := range groupPath {
-		fmt.Printf("%s ==> %s\n", k, val)
-	}
 	return out
 }
 
