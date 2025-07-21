@@ -209,9 +209,44 @@ func handleImportedFunctionRegistration(mainPkg *packages.Package, exp *ast.Call
 	return nil, false
 }
 
+// search for registration with path like this:
+//
+//	second_group := first_group.Group("/second")
+//
+// second_group.GET("/lol2", HandlerForSecondGroup)
 func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
-	
-	return nil, false
+	t, ok := exp.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return nil, false
+	}
+	x, ok := t.X.(*ast.Ident)
+	if !ok {
+		return nil, false
+	}
+	obj, ok := mainPkg.TypesInfo.Uses[x]
+	if !ok {
+		return nil, false
+	}
+	if obj.Type().String() != ECHO_GROUP_VARIABLE_TYPE {
+		return nil, false
+	}
+	if !IsHTTPMethod(t.Sel.Name) {
+		return nil, false
+	}
+	if _, ok := exp.Args[0].(*ast.BasicLit); !ok {
+		return nil, false
+	}
+	fn, ok := resolveHandlerExpr(mainPkg, exp.Args[1])
+	if !ok {
+		return nil, false
+	}
+	out := &HandlerRegistration{
+		Func:      fn,
+		Call:      exp,
+		IsDirect:  true,
+		GroupPath: []string{},
+	}
+	return out, true
 }
 
 // find all simple handler registration
