@@ -13,6 +13,8 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Experiment with `go/types` object.
 - [X] Find handler declaration position for simple registration
 - [X] Get all function that use import
+- [X] find the handler for group handler registration
+- [X] refactor the program with `(n * node)`
 - [ ] Find the 'not direct' handler registration
 - [ ] Learn how to fetch the router
 - [ ] Reinspect the handler using previously fetched `types.Func`
