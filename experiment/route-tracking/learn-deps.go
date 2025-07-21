@@ -10,6 +10,13 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+var registrationHandler = []func(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool){
+	handleDirectRegistration,
+	handleFunctionRegistration,
+	handleImportedFunctionRegistration,
+	handleGroupRegistration,
+}
+
 func TryTraverse() {
 	fset = token.NewFileSet()
 	cfg := &packages.Config{
@@ -63,14 +70,14 @@ func TryTraverse() {
 		return
 	}
 	fmt.Println("identName: ", identName)
-	fnObjMap := FindHandlerRegistrationNode(mainPkg, mainFile, identName)
-	if len(fnObjMap) == 0 {
+	handlerRegs := FindHandlerRegistrationNode(mainPkg, mainFile, identName)
+	if len(handlerRegs) == 0 {
 		fmt.Println("can't find handler registration")
 		return
 	}
 
-	for k, val := range fnObjMap {
-		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val.Fun, k)
+	for _, val := range handlerRegs {
+		fmt.Printf("%v IS REGISTERED IN %v >>>>> \n\n", val.Call.Fun, val.Func)
 	}
 	// check types of `ast.Ident`
 	// if ident, ok := callExps[0].Args[1].(*ast.Ident); ok {
@@ -142,19 +149,66 @@ func FindFmWorkInitExpression(file *ast.File, frameworkName string, functionName
 	return result, identName
 }
 
+// target pattern that can be recognized:
+// e.GET("/next-test", handlerTest)
+// e.POST("/dummy", dummyhandler.JustDummyHandler)
 func handleDirectRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+	t, ok := exp.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return nil, false
+	}
+	if x, ok := t.X.(*ast.Ident); !ok || x.Name != identName {
+		return nil, false
+	}
+	if !IsHTTPMethod(t.Sel.Name) {
+		return nil, false
+	}
+	if _, ok := exp.Args[0].(*ast.BasicLit); !ok {
+		return nil, false
+	}
+	fn, ok := resolveHandlerExpr(mainPkg, exp.Args[1])
+	if !ok {
+		return nil, false
+	}
+	out := &HandlerRegistration{
+		Func:      fn,
+		Call:      exp,
+		IsDirect:  true,
+		GroupPath: []string{},
+	}
+	return out, true
+}
+
+// target pattern that can be recognized:
+// RegisterEcho(e, "ignore-this")
+func handleFunctionRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
+	t, ok := exp.Fun.(*ast.Ident)
+	if !ok {
+		return nil, false
+	}
+	obj, ok := mainPkg.TypesInfo.Uses[t]
+	if !ok {
+		return nil, false
+
+	}
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return nil, false
+	}
+	out := &HandlerRegistration{
+		Func:      fn,
+		Call:      exp,
+		IsDirect:  false,
+		GroupPath: []string{},
+	}
+	return out, true
+}
+
+func handleImportedFunctionRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
 	return nil, false
 }
 
-func handleFunctionRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
-	return nil, false
-}
-
-func handleImportedFunctionRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
-	return nil, false
-}
-
-func handleGroupRegistration(mainPkg *packages.Package, file *ast.File, identName string) (*HandlerRegistration, bool) {
+func handleGroupRegistration(mainPkg *packages.Package, exp *ast.CallExpr, identName string) (*HandlerRegistration, bool) {
 	return nil, false
 }
 
@@ -164,8 +218,8 @@ func handleGroupRegistration(mainPkg *packages.Package, file *ast.File, identNam
 // pattern that can be recognized:
 // e.GET("/next-test", handlerTest)
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
-func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) map[*types.Func]*ast.CallExpr {
-	result := make(map[*types.Func]*ast.CallExpr)
+func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, identName string) []*HandlerRegistration {
+	out := []*HandlerRegistration{}
 	ast.Inspect(file, func(n ast.Node) bool {
 		callExp, ok := n.(*ast.CallExpr)
 		if !ok {
@@ -174,40 +228,17 @@ func FindHandlerRegistrationNode(mainPkg *packages.Package, file *ast.File, iden
 		if len(callExp.Args) < 1 {
 			return true
 		}
-		switch t := callExp.Fun.(type) {
-		case *ast.SelectorExpr:
-			// here
-			if x, ok := t.X.(*ast.Ident); !ok || x.Name != identName {
-				return true
+		for _, fn := range registrationHandler {
+			handlerReg, ok := fn(mainPkg, callExp, identName)
+			if ok {
+				out = append(out, handlerReg)
+				return false
 			}
-			if !IsHTTPMethod(t.Sel.Name) {
-				return true
-			}
-			if _, ok := callExp.Args[0].(*ast.BasicLit); !ok {
-				return true
-			}
-			fn, ok := resolveHandlerExpr(mainPkg, callExp.Args[1])
-			if !ok {
-				return true
-			}
-			result[fn] = callExp
-		case *ast.Ident:
-			obj, ok := mainPkg.TypesInfo.Uses[t]
-			if !ok {
-				return true
-			}
-			fn, ok := obj.(*types.Func)
-			if !ok {
-				return true
-			}
-			result[fn] = callExp
-		default:
-			return true
 		}
 		return false
 	})
 
-	return result
+	return out
 }
 
 // Resolve the func object
