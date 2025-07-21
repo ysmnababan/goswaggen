@@ -15,6 +15,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Get all function that use import
 - [X] find the handler for group handler registration
 - [X] refactor the program with `(n * node)`
+- [ ] make sure the no duplicate handler node captured
 - [ ] Find the 'not direct' handler registration
 - [ ] Learn how to fetch the router
 - [ ] Reinspect the handler using previously fetched `types.Func`
