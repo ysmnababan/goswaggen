@@ -138,7 +138,10 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 	if !ok {
 		return nil, false
 	}
-	path := ctx.GroupPath[obj.Name()]
+	path, ok := ctx.GroupPath[obj.Name()]
+	if !ok {
+		path = ctx.AliasForRouterTypeArgs
+	}
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
@@ -148,11 +151,14 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 	return out, true
 }
 
-// hasRouterTypePrefix.
+// getRouterTypePrefix
+//
 // Checking if a function contains a router type prefix.
+//
 // i.e <echo>.Get()
+//
 // or  <echoGroup>.Get()
-func hasRouterTypePrefix(pkg *packages.Package, callExp *ast.CallExpr) bool {
+func getRouterTypePrefix(pkg *packages.Package, callExp *ast.CallExpr) (bool, string) {
 	for _, arg := range callExp.Args {
 		ident, ok := arg.(*ast.Ident)
 		if !ok {
@@ -164,10 +170,10 @@ func hasRouterTypePrefix(pkg *packages.Package, callExp *ast.CallExpr) bool {
 		}
 		if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE ||
 			obj.Type().String() == ECHO_VARIABLE_TYPE {
-			return true
+			return true, obj.Name()
 		}
 	}
-	return false
+	return false, ""
 }
 
 // target pattern that can be recognized:
@@ -177,10 +183,10 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 	exp := ctx.CurrentExpr
 
 	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
-	if !hasRouterTypePrefix(pkg, exp) {
+	hasRouterPrefix, prefix := getRouterTypePrefix(pkg, exp)
+	if !hasRouterPrefix {
 		return nil, false
 	}
-
 	t, ok := exp.Fun.(*ast.Ident)
 	if !ok {
 		return nil, false
@@ -194,13 +200,12 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 	if !ok {
 		return nil, false
 	}
-	fmt.Println("CALL EXPR", fn.Name())
+	ctx.AliasForRouterTypeArgs = ctx.GroupPath[prefix]
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: false,
 	}
-	// FindFuncDeclaration(mainPkg, fn)
 	return out, true
 }
 
@@ -233,6 +238,7 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 					ctx.CurrentExpr = nil
 					ctx.CurrentFunc = ctx.GetFuncDecl(handlerReg.Func)
 					regs := FindHandlerRegistration(ctx)
+					ctx.AliasForRouterTypeArgs = "" // reset alias for each `ast.FuncDecl` inspect
 					result = append(result, regs...)
 					return false
 				}
@@ -277,7 +283,10 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 					return false
 				}
 				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
-					parentPath := ctx.GroupPath[ident.Name]
+					parentPath, ok := ctx.GroupPath[ident.Name]
+					if !ok {
+						parentPath = ctx.AliasForRouterTypeArgs
+					}
 					ctx.GroupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
 					return false
 				}
