@@ -14,6 +14,12 @@ type RegistrationContext struct {
 	typeFuncToFuncDeclMap map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
 	CurrentExpr           *ast.CallExpr
 	CurrentFunc           *ast.FuncDecl
+
+	// If a function use an `echo.Group` as an argument,
+	// the variable itself must have actual path which is defined when the function is used.
+	// So before peek into the `ast.FuncDecl`, save the actual path first.
+	// Remember to reset after using so it doesn't clutter for the next function call.
+	AliasForRouterTypeArgs string
 }
 
 func NewRegistrationContext(pkgs []*packages.Package, funDecl *ast.FuncDecl) *RegistrationContext {
