@@ -190,6 +190,25 @@ func handleDirectRegistration(ctx *RegistrationContext) (*HandlerRegistration, b
 	return out, true
 }
 
+func FindFuncDeclaration(p *packages.Package, fnObj *types.Func) {
+	for _, file := range p.Syntax {
+		for _, decl := range file.Decls {
+			fn, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+
+			obj, ok := p.TypesInfo.Defs[fn.Name]
+			if !ok {
+				continue
+			}
+			if obj == fnObj {
+				fmt.Println("MATCH: ", obj)
+			}
+		}
+	}
+}
+
 // target pattern that can be recognized:
 // RegisterEcho(e, "ignore-this")
 func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
@@ -213,6 +232,7 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 		Call:     exp,
 		IsDirect: false,
 	}
+	FindFuncDeclaration(mainPkg, fn)
 	return out, true
 }
 
