@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 	"log"
+	"strings"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -176,8 +177,52 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 				}
 			}
 			return false
-		// case *ast.AssignStmt: // this is for registration for `echo.Group`
-		// return true
+		case *ast.AssignStmt: // this is for finding the Grouping
+			currentPkg := ctx.GetCurrentPackage()
+			if len(t.Lhs) > 1 || len(t.Rhs) > 1 {
+				return true
+			}
+			lhs, ok := t.Lhs[0].(*ast.Ident)
+			if !ok {
+				return true
+			}
+			callExpr, ok := t.Rhs[0].(*ast.CallExpr)
+			if !ok {
+				return true
+			}
+
+			if len(callExpr.Args) == 0 {
+				return true
+			}
+
+			route, ok := callExpr.Args[0].(*ast.BasicLit)
+			if !ok {
+				return true
+			}
+			selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return true
+			}
+			if selExpr.Sel.Name != "Group" {
+				return true
+			}
+			ident, ok := selExpr.X.(*ast.Ident)
+			if !ok {
+				return true
+			}
+			if obj, ok := currentPkg.TypesInfo.Uses[ident]; ok {
+				if obj.Type().String() == ECHO_VARIABLE_TYPE {
+					ctx.GroupPath[lhs.Name] = strings.Trim(route.Value, `"`)
+					return false
+				}
+				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
+					parentPath := ctx.GroupPath[ident.Name]
+					ctx.GroupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
+					return false
+				}
+				return true
+			}
+			return true
 		default:
 			return true
 		}

@@ -9,7 +9,7 @@ import (
 type RegistrationContext struct {
 	Pkgs             []*packages.Package
 	GroupPath        map[string]string
-	CurrentPackage   *packages.Package
+	// CurrentPackage   *packages.Package
 	CurrentExpr      *ast.CallExpr
 	CurrentFunc      *ast.FuncDecl
 	funcDeclToPkgMap map[*ast.FuncDecl]*packages.Package // for faster retrival of a particular package
