@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"log"
 	"strings"
 
@@ -54,13 +55,7 @@ func TryRecursive() {
 		return
 	}
 	fmt.Println("FRAMEWORK import name", fmwork)
-	ctx := &RegistrationContext{
-		funcDeclToPkgMap: make(map[*ast.FuncDecl]*packages.Package),
-		Pkgs:             pkgs,
-		GroupPath:        make(map[string]string),
-		CurrentFunc:      mainFuncDecl,
-	}
-	ctx.BuildFuncDeclToPkgMap()
+	ctx := NewRegistrationContext(pkgs, mainFuncDecl)
 	handlerRegs := FindHandlerRegistration(ctx)
 	if len(handlerRegs) == 0 {
 		fmt.Println("can't find handler registration")
@@ -150,6 +145,33 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 		IsDirect: true,
 		BasePath: path,
 	}
+	return out, true
+}
+
+// target pattern that can be recognized:
+// RegisterEcho(e, "ignore-this")
+func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
+	pkg := ctx.GetCurrentPackage()
+	exp := ctx.CurrentExpr
+	t, ok := exp.Fun.(*ast.Ident)
+	if !ok {
+		return nil, false
+	}
+	obj, ok := pkg.TypesInfo.Uses[t]
+	if !ok {
+		return nil, false
+
+	}
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return nil, false
+	}
+	out := &HandlerRegistration{
+		Func:     fn,
+		Call:     exp,
+		IsDirect: false,
+	}
+	// FindFuncDeclaration(mainPkg, fn)
 	return out, true
 }
 
