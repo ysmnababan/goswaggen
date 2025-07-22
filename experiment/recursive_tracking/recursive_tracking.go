@@ -148,11 +148,39 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 	return out, true
 }
 
+// hasRouterTypePrefix.
+// Checking if a function contains a router type prefix.
+// i.e <echo>.Get()
+// or  <echoGroup>.Get()
+func hasRouterTypePrefix(pkg *packages.Package, callExp *ast.CallExpr) bool {
+	for _, arg := range callExp.Args {
+		ident, ok := arg.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		obj, ok := pkg.TypesInfo.Uses[ident]
+		if !ok {
+			continue
+		}
+		if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE ||
+			obj.Type().String() == ECHO_VARIABLE_TYPE {
+			return true
+		}
+	}
+	return false
+}
+
 // target pattern that can be recognized:
 // RegisterEcho(e, "ignore-this")
 func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
+
+	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
+	if !hasRouterTypePrefix(pkg, exp) {
+		return nil, false
+	}
+
 	t, ok := exp.Fun.(*ast.Ident)
 	if !ok {
 		return nil, false
@@ -166,6 +194,7 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 	if !ok {
 		return nil, false
 	}
+	fmt.Println("CALL EXPR", fn.Name())
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
