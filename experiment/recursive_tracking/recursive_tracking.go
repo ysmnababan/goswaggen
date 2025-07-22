@@ -15,9 +15,9 @@ var FSET *token.FileSet
 
 var registrationHandler = []func(ctx *RegistrationContext) (*HandlerRegistration, bool){
 	handleDirectRegistration,
-	// handleFunctionRegistration,
-	// handleImportedFunctionRegistration,
 	handleGroupRegistration,
+	handleFunctionRegistration,
+	// handleImportedFunctionRegistration,
 }
 
 func TryRecursive() {
@@ -194,7 +194,17 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 			for _, fn := range registrationHandler {
 				handlerReg, ok := fn(ctx)
 				if ok {
-					result = append(result, handlerReg)
+					if handlerReg.IsDirect {
+						result = append(result, handlerReg)
+						return false
+					}
+
+					// when the expression is not direct handler registration
+					// have to traverse inside the FuncDecl again.
+					ctx.CurrentExpr = nil
+					ctx.CurrentFunc = ctx.GetFuncDecl(handlerReg.Func)
+					regs := FindHandlerRegistration(ctx)
+					result = append(result, regs...)
 					return false
 				}
 			}
