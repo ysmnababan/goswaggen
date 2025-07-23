@@ -17,7 +17,7 @@ var registrationHandler = []func(ctx *RegistrationContext) (*HandlerRegistration
 	handleDirectRegistration,
 	handleGroupRegistration,
 	handleFunctionRegistration,
-	// handleImportedFunctionRegistration,
+	handleImportedFunctionRegistration,
 }
 
 func TryRecursive() {
@@ -34,7 +34,7 @@ func TryRecursive() {
 		Dir:  "../example/learn-go/", // relative to where you run `go run`
 		Fset: FSET,
 	}
-	pkgs, err := packages.Load(cfg, ".") // load add the package
+	pkgs, err := packages.Load(cfg, "./...") // load add the package
 	if err != nil {
 		panic(err)
 	}
@@ -61,9 +61,10 @@ func TryRecursive() {
 		fmt.Println("can't find handler registration")
 		return
 	}
-
-	for _, val := range handlerRegs {
+	fmt.Println(len(handlerRegs))
+	for i, val := range handlerRegs {
 		val.Print()
+		fmt.Println(i + 1)
 	}
 }
 
@@ -212,13 +213,15 @@ func getRouterTypePrefix(ctx *RegistrationContext) (bool, string) {
 	return false, ""
 }
 
+// handleFunctionRegistration
+//
 // Target pattern that can be recognized:
 //
 // RegisterEcho(e, "ignore-this")
 func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
-
+	fmt.Println("DIRECT FUNC ", FSET.Position(exp.Pos()))
 	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
 	hasRouterPrefix, prefix := getRouterTypePrefix(ctx)
 	if !hasRouterPrefix {
@@ -228,19 +231,56 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 	if !ok {
 		return nil, false
 	}
+	fmt.Println("DIRECT FUNC", t.Name, ctx.Level)
+
 	obj, ok := pkg.TypesInfo.Uses[t]
 	if !ok {
 		return nil, false
-
 	}
 	fn, ok := obj.(*types.Func)
 	if !ok {
 		return nil, false
 	}
+	fmt.Println("DIRECT FUNC", fn.FullName())
 	ctx.AliasForRouterTypeArgs = prefix
 	out := &HandlerRegistration{
 		Func:     fn,
-		Call:     exp,
+		IsDirect: false,
+	}
+	return out, true
+}
+
+// handleImportedFunctionRegistration
+//
+// Target pattern that can be recognized:
+//
+// RegisterEcho(e, "ignore-this")
+func handleImportedFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
+	pkg := ctx.GetCurrentPackage()
+	exp := ctx.CurrentExpr
+
+	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
+	hasRouterPrefix, prefix := getRouterTypePrefix(ctx)
+	if !hasRouterPrefix {
+		return nil, false
+	}
+	selExpr, ok := exp.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return nil, false
+	}
+	obj, ok := pkg.TypesInfo.Uses[selExpr.Sel]
+	if !ok {
+		return nil, false
+	}
+	fn, ok := obj.(*types.Func)
+	if !ok {
+		return nil, false
+	}
+	fmt.Println("IMPORT FUNC", fn.FullName())
+	ctx.AliasForRouterTypeArgs = prefix
+	out := &HandlerRegistration{
+		Func: fn,
+		// Call:     exp,
 		IsDirect: false,
 	}
 	return out, true
@@ -253,7 +293,8 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 // e.GET("/next-test", handlerTest)
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
 func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
-	var result []*HandlerRegistration
+	fmt.Println("START >>>>>>>>>>>>>", ctx.Level)
+	result := []*HandlerRegistration{}
 
 	ast.Inspect(ctx.CurrentFunc, func(n ast.Node) bool {
 		switch t := n.(type) {
@@ -262,25 +303,28 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 				return true
 			}
 			ctx.CurrentExpr = t
-			for _, fn := range registrationHandler {
+			for i, fn := range registrationHandler {
 				handlerReg, ok := fn(ctx)
 				if ok {
+					fmt.Printf("fungsi ke %d, dengan level %d; POS %v\n", i, ctx.Level, FSET.Position(t.Pos()))
 					if handlerReg.IsDirect {
 						result = append(result, handlerReg)
-						return false
+						continue
 					}
 
 					// when the expression is not direct handler registration
 					// have to traverse inside the FuncDecl again.
 					ctx.CurrentExpr = nil
 					ctx.CurrentFunc = ctx.GetFuncDecl(handlerReg.Func)
+
+					ctx.Level++
 					regs := FindHandlerRegistration(ctx)
+					ctx.Level--
 					ctx.AliasForRouterTypeArgs = "" // reset alias for each `ast.FuncDecl` inspect
 					result = append(result, regs...)
-					return false
 				}
 			}
-			return false
+			return true
 		case *ast.AssignStmt: // this is for finding the Grouping
 			currentPkg := ctx.GetCurrentPackage()
 			if len(t.Lhs) > 1 || len(t.Rhs) > 1 {
@@ -334,7 +378,8 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 			return true
 		}
 	})
-
+	fmt.Println("len", len(result))
+	fmt.Println("END <<<<<<<<<<<<<<<<<<<<", ctx.Level)
 	return result
 }
 

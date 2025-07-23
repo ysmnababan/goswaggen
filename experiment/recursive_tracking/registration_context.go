@@ -3,6 +3,7 @@ package main
 import (
 	"go/ast"
 	"go/types"
+	"log"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -14,6 +15,7 @@ type RegistrationContext struct {
 	typeFuncToFuncDeclMap map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
 	CurrentExpr           *ast.CallExpr
 	CurrentFunc           *ast.FuncDecl
+	Level 	int
 
 	// If a function use an `echo.Group` as an argument,
 	// the variable itself must have actual path which is defined when the function is used.
@@ -60,5 +62,9 @@ func (c *RegistrationContext) GetCurrentPackage() *packages.Package {
 }
 
 func (c *RegistrationContext) GetFuncDecl(fnObj *types.Func) *ast.FuncDecl {
-	return c.typeFuncToFuncDeclMap[fnObj]
+	out, ok := c.typeFuncToFuncDeclMap[fnObj]
+	if !ok {
+		log.Print(fnObj.FullName())
+	}
+	return out
 }
