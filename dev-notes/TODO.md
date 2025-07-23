@@ -15,14 +15,16 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Get all function that use import
 - [X] find the handler for group handler registration
 - [X] refactor the program with `(n * node)`
-- [ ] make sure the no duplicate handler node captured
-- [ ] Find the 'not direct' handler registration
-- [ ] Learn how to fetch the router
-- [ ] Reinspect the handler using previously fetched `types.Func`
-- [ ] Ensure the package has correct import lib for the handler
-- [ ] Learn how traverse to another file (from import)
-- [ ] Learn how to fetch the success and failure response
+- [X] make sure the no duplicate handler node captured
+- [X] Find the 'not direct' handler registration
+- [X] Learn how to fetch the router
+- [X] Learn how traverse to another file (from import)
+- [X] Reinspect the handler using previously fetched `types.Func`
+- [X] Ensure the package has correct import lib for the handler
+- [ ] Relation between the `c.Bind` with the http method
+- [ ] Rule or convention for the http method and the payload, param, or query param
 - [ ] Learn how to add to recognize the payload, param or query param
+- [ ] Learn how to fetch the success and failure response
 
 DEVELOPMENT STAGE: Generating Comment
 - [ ] Look up what param need to cover
