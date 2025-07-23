@@ -15,7 +15,7 @@ type RegistrationContext struct {
 	typeFuncToFuncDeclMap map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
 	CurrentExpr           *ast.CallExpr
 	CurrentFunc           *ast.FuncDecl
-	Level 	int
+	Level                 int
 
 	// If a function use an `echo.Group` as an argument,
 	// the variable itself must have actual path which is defined when the function is used.
@@ -67,4 +67,20 @@ func (c *RegistrationContext) GetFuncDecl(fnObj *types.Func) *ast.FuncDecl {
 		log.Print(fnObj.FullName())
 	}
 	return out
+}
+
+func (c *RegistrationContext) ResetGroupPath() {
+	for k := range c.GroupPath {
+		delete(c.GroupPath, k)
+	}
+}
+
+func (c *RegistrationContext) CreateGroupPathDuplicate() map[string]string {
+	// Create a new map
+	copyMap := make(map[string]string)
+
+	for k, v := range c.GroupPath {
+		copyMap[k] = v
+	}
+	return copyMap
 }
