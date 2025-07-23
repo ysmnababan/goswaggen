@@ -155,35 +155,72 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 //
 // Checking if a function contains a router type prefix.
 //
-// i.e <echo>.Get()
+// case 1: foo(<echo>)
 //
-// or  <echoGroup>.Get()
-func getRouterTypePrefix(pkg *packages.Package, callExp *ast.CallExpr) (bool, string) {
-	for _, arg := range callExp.Args {
-		ident, ok := arg.(*ast.Ident)
-		if !ok {
+// case 2: foo(<echo.Group>)
+//
+// case 3: foo(<echo>.Group("/path"))
+//
+// case 4: foo(<echo.Group>.Group("/path"))
+func getRouterTypePrefix(ctx *RegistrationContext) (bool, string) {
+	pkg := ctx.GetCurrentPackage()
+	for _, arg := range ctx.CurrentExpr.Args {
+		switch n := arg.(type) {
+		case *ast.Ident:
+			obj, ok := pkg.TypesInfo.Uses[n]
+			if !ok {
+				continue
+			}
+			if obj.Type().String() == ECHO_VARIABLE_TYPE {
+				return true, "" // case 1
+			}
+			if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
+				return true, ctx.GroupPath[obj.Name()] // case 2
+			}
+		case *ast.CallExpr:
+			if sel, ok := n.Fun.(*ast.SelectorExpr); ok {
+				ident, ok := sel.X.(*ast.Ident)
+				if !ok {
+					continue
+				}
+				obj, ok := pkg.TypesInfo.Uses[ident]
+				if !ok {
+					continue
+				}
+
+				if obj.Type().String() == ECHO_VARIABLE_TYPE {
+					route, ok := n.Args[0].(*ast.BasicLit)
+					if !ok {
+						continue
+					}
+					return true, strings.Trim(route.Value, `"`) // case 3
+				}
+				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
+					prefix := ctx.GroupPath[obj.Name()]
+					route, ok := n.Args[0].(*ast.BasicLit)
+					if !ok {
+						continue
+					}
+					prefix += strings.Trim(route.Value, `"`)
+					return true, prefix // case 4
+				}
+			}
+		default:
 			continue
-		}
-		obj, ok := pkg.TypesInfo.Uses[ident]
-		if !ok {
-			continue
-		}
-		if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE ||
-			obj.Type().String() == ECHO_VARIABLE_TYPE {
-			return true, obj.Name()
 		}
 	}
 	return false, ""
 }
 
-// target pattern that can be recognized:
+// Target pattern that can be recognized:
+//
 // RegisterEcho(e, "ignore-this")
 func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
 
 	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
-	hasRouterPrefix, prefix := getRouterTypePrefix(pkg, exp)
+	hasRouterPrefix, prefix := getRouterTypePrefix(ctx)
 	if !hasRouterPrefix {
 		return nil, false
 	}
@@ -200,7 +237,7 @@ func handleFunctionRegistration(ctx *RegistrationContext) (*HandlerRegistration,
 	if !ok {
 		return nil, false
 	}
-	ctx.AliasForRouterTypeArgs = ctx.GroupPath[prefix]
+	ctx.AliasForRouterTypeArgs = prefix
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
@@ -283,9 +320,9 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 					return false
 				}
 				if obj.Type().String() == ECHO_GROUP_VARIABLE_TYPE {
-					parentPath, ok := ctx.GroupPath[ident.Name]
-					if !ok {
-						parentPath = ctx.AliasForRouterTypeArgs
+					parentPath := ctx.AliasForRouterTypeArgs
+					if parentPath == "" {
+						parentPath = ctx.GroupPath[ident.Name]
 					}
 					ctx.GroupPath[lhs.Name] = parentPath + strings.Trim(route.Value, `"`)
 					return false
@@ -300,3 +337,7 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 
 	return result
 }
+
+// TODO
+// RegisterEchoSelectorAsParamGroup(first_group.Group("/"))
+//
