@@ -1,0 +1,16 @@
+/.idea
+/vendor
+/out
+/.vscode
+*.exe
+
+
+# env variable file
+/.env
+/.env.local
+/.env.development
+/.env.staging
+/.env.production
+/config.yml
+/secret
+/secret.yml

@@ -56,4 +56,3 @@ coverage.out
 
 # GORM Gen files (if you're using it)
 generated/
-example/

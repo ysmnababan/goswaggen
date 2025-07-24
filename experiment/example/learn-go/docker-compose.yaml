@@ -1,0 +1,44 @@
+services:
+
+  redis:
+    image: redis:latest
+    command: redis-server --requirepass password
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=password
+    networks:
+      - backend
+
+
+  db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 5432:5432
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=admin
+      - POSTGRES_DB=mydatabase
+    networks:
+      - backend
+
+  backend:
+    build:
+      context: .
+    container_name: backend
+    restart: always
+    depends_on:
+      - db 
+      - redis 
+    ports:
+      - "1323:1323"
+    networks:
+      - backend
+volumes:
+  db-data:
+
+networks:
+  backend:
