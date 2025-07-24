@@ -21,8 +21,8 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Learn how traverse to another file (from import)
 - [X] Reinspect the handler using previously fetched `types.Func`
 - [X] Ensure the package has correct import lib for the handler
-- [ ] Relation between the `c.Bind` with the http method
-- [ ] Rule or convention for the http method and the payload, param, or query param
+- [X] Relation between the `c.Bind` with the http method
+- [X] Rule or convention for the http method and the payload, param, or query param
 - [ ] Learn how to add to recognize the payload, param or query param
 - [ ] Learn how to fetch the success and failure response
 
