@@ -54,6 +54,7 @@ func (n *HandlerRegistration) GetFullPath() string {
 type RequestData struct {
 	Call       *ast.CallExpr // The actual call expression
 	Param      *types.Var    // The param type
+	ParamDecl  *ast.GenDecl  // Declaration of the param
 	BindMethod string        // Body, QueryParam, Param
 	BasicLit   string        // for queryparam and param args, e.g. <context>.Param("this")
 }
