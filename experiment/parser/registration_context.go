@@ -13,6 +13,7 @@ type RegistrationContext struct {
 	GroupPath             map[string]string
 	funcDeclToPkgMap      map[*ast.FuncDecl]*packages.Package // cache for faster retrival of a particular package
 	typeFuncToFuncDeclMap map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
+	typeVarToGenDeclMap   map[*types.TypeName]*ast.GenDecl    // cache for faster retrival of a generic declaration
 	CurrentExpr           *ast.CallExpr
 	CurrentFunc           *ast.FuncDecl
 	Level                 int
@@ -28,17 +29,19 @@ func NewRegistrationContext(pkgs []*packages.Package, funDecl *ast.FuncDecl) *Re
 	ctx := &RegistrationContext{
 		funcDeclToPkgMap:      make(map[*ast.FuncDecl]*packages.Package),
 		typeFuncToFuncDeclMap: make(map[*types.Func]*ast.FuncDecl),
+		typeVarToGenDeclMap:   make(map[*types.TypeName]*ast.GenDecl),
 		GroupPath:             make(map[string]string),
 		Pkgs:                  pkgs,
 		CurrentFunc:           funDecl,
 	}
-	ctx.buildFuncCache()
+	ctx.buildCache()
 	return ctx
 }
 
-func (c *RegistrationContext) buildFuncCache() {
+func (c *RegistrationContext) buildCache() {
 	declToPkg := make(map[*ast.FuncDecl]*packages.Package)
 	typeFuncToFuncDeclMap := make(map[*types.Func]*ast.FuncDecl)
+	typeVarToGenDeclMap := make(map[*types.TypeName]*ast.GenDecl)
 	for _, pkg := range c.Pkgs {
 		for _, file := range pkg.Syntax {
 			for _, decl := range file.Decls {
@@ -50,11 +53,21 @@ func (c *RegistrationContext) buildFuncCache() {
 						}
 					}
 				}
+				if gn, ok := decl.(*ast.GenDecl); ok {
+					if typeSpec, ok := gn.Specs[0].(*ast.TypeSpec); ok {
+						if obj, ok := pkg.TypesInfo.Defs[typeSpec.Name]; ok {
+							if varObj, ok := obj.(*types.TypeName); ok {
+								typeVarToGenDeclMap[varObj] = gn
+							}
+						}
+					}
+				}
 			}
 		}
 	}
 	c.funcDeclToPkgMap = declToPkg
 	c.typeFuncToFuncDeclMap = typeFuncToFuncDeclMap
+	c.typeVarToGenDeclMap = typeVarToGenDeclMap
 }
 
 func (c *RegistrationContext) GetCurrentPackage() *packages.Package {
