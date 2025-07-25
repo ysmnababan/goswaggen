@@ -60,7 +60,19 @@ func (h *handler) CreateUser(c echo.Context) error {
 	if err != nil {
 		return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
 	}
+	c.Bind(req)
+	if err := c.Bind(req); err != nil {
+		return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
+	}
+	req.Email = "emailz"
+	key := "some-key"
+	t := c
+	date := t.QueryParam(key)
+	t.QueryParam(req.Email)
+	id := c.Param("id")
 
+	_ = date
+	_ = id
 	err = c.Validate(req)
 	if err != nil {
 		return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
