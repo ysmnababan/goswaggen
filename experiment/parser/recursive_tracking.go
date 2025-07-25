@@ -47,10 +47,13 @@ func handleDirectRegistration(ctx *RegistrationContext) (*HandlerRegistration, b
 	if !ok {
 		return nil, false
 	}
+	funDecl := ctx.GetFuncDecl(fn)
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
+		Pkg:      pkg,
+		FuncDecl: funDecl,
 	}
 	return out, true
 }
@@ -91,11 +94,14 @@ func handleGroupRegistration(ctx *RegistrationContext) (*HandlerRegistration, bo
 	if !ok {
 		path = ctx.AliasForRouterTypeArgs
 	}
+	funDecl := ctx.GetFuncDecl(fn)
 	out := &HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
 		BasePath: path,
+		Pkg:      pkg,
+		FuncDecl: funDecl,
 	}
 	return out, true
 }
