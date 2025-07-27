@@ -4,8 +4,13 @@ type UserCreateRequest struct {
 	Name     string `json:"name" validate:"required"`
 	Email    string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
+	Personal Personal
 }
 
+type Personal struct {
+	Age   int
+	Hobby string
+}
 type UserResponse struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`

@@ -55,13 +55,9 @@ func (h *handler) GetUsers(c echo.Context) error {
 // @Failure 500 {object} response.APIResponse
 // @Router /api/v1/users [post]
 func (h *handler) CreateUser(c echo.Context) error {
-	req := &UserCreateRequest{}
-	err := c.Bind(req)
+	req := UserCreateRequest{}
+	err := c.Bind(&req.Personal)
 	if err != nil {
-		return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
-	}
-	c.Bind(req)
-	if err := c.Bind(req); err != nil {
 		return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
 	}
 	req.Email = "emailz"
@@ -77,7 +73,7 @@ func (h *handler) CreateUser(c echo.Context) error {
 	if err != nil {
 		return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
 	}
-	err = h.service.Create(c, req)
+	err = h.service.Create(c, &req)
 	if err != nil {
 		return err
 	}
