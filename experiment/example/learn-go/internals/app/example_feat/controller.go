@@ -43,6 +43,9 @@ func (h *handler) GetUsers(c echo.Context) error {
 	return response.WithStatusOKResponse(res, c)
 }
 
+var VARKEY string = "var-key"
+var CONSTKEY string = "const-key"
+
 // @Summary Create User
 // @Description Create new User
 // @Tags user
@@ -63,6 +66,8 @@ func (h *handler) CreateUser(c echo.Context) error {
 	req.Email = "emailz"
 	key := "some-key"
 	t := c
+	t.QueryParam(CONSTKEY)
+	t.QueryParam(VARKEY)
 	date := t.QueryParam(key)
 	t.QueryParam(req.Email)
 	id := c.Param("id")
