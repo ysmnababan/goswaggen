@@ -118,33 +118,67 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 
 		switch bindMethod {
 		case "Bind":
-			arg, ok := callExpr.Args[0].(*ast.Ident)
-			if !ok {
-				return true
+			switch arg := callExpr.Args[0].(type) {
+			case *ast.UnaryExpr:
+				if arg.Op != token.AND {
+					return true
+				}
+				ident, ok := arg.X.(*ast.Ident)
+				if !ok {
+					return true
+				}
+				obj, ok := h.Pkg.TypesInfo.Uses[ident]
+				if !ok {
+					return true
+				}
+				v, ok := obj.(*types.Var)
+				if !ok || objMap[v] {
+					return true
+				}
+				reqData.Param = v
+
+				// Get underlying struct type
+				typ := v.Type()
+				if ptr, ok := typ.(*types.Pointer); ok {
+					typ = ptr.Elem()
+				}
+				named, ok := typ.(*types.Named)
+				if !ok {
+					return true
+				}
+				typeName := named.Obj() // *types.TypeName
+				if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
+					reqData.ParamDecl = decl
+				}
+				objMap[v] = true
+			case *ast.Ident:
+				obj, ok := h.Pkg.TypesInfo.Uses[arg]
+				if !ok {
+					return true
+				}
+				v, ok := obj.(*types.Var)
+				if !ok || objMap[v] {
+					return true
+				}
+				reqData.Param = v
+
+				// Get underlying struct type
+				typ := v.Type()
+				if ptr, ok := typ.(*types.Pointer); ok {
+					typ = ptr.Elem()
+				}
+				named, ok := typ.(*types.Named)
+				if !ok {
+					return true
+				}
+				typeName := named.Obj() // *types.TypeName
+				if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
+					reqData.ParamDecl = decl
+				}
+				objMap[v] = true
+			case *ast.SelectorExpr:
+				
 			}
-			obj, ok := h.Pkg.TypesInfo.Uses[arg]
-			if !ok {
-				return true
-			}
-			v, ok := obj.(*types.Var)
-			if !ok || objMap[v] {
-				return true
-			}
-			reqData.Param = v
-			// Get underlying struct type
-			typ := v.Type()
-			if ptr, ok := typ.(*types.Pointer); ok {
-				typ = ptr.Elem()
-			}
-			named, ok := typ.(*types.Named)
-			if !ok {
-				return true
-			}
-			typeName := named.Obj() // *types.TypeName
-			if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
-				reqData.ParamDecl = decl
-			}
-			objMap[v] = true
 		case "QueryParam":
 			switch arg := callExpr.Args[0].(type) {
 			case *ast.Ident:
@@ -176,6 +210,8 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 				objMap[v] = true
 			case *ast.BasicLit:
 				reqData.BasicLit = arg.Value
+			case *ast.SelectorExpr:
+
 			}
 		default:
 			return true
