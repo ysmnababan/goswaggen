@@ -23,6 +23,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Ensure the package has correct import lib for the handler
 - [X] Relation between the `c.Bind` with the http method
 - [X] Rule or convention for the http method and the payload, param, or query param
+- [X] Add cache for storing global or const variable
 - [ ] Learn how to add to recognize the payload, param or query param
 - [ ] Learn how to fetch the success and failure response
 

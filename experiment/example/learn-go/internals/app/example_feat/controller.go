@@ -44,7 +44,7 @@ func (h *handler) GetUsers(c echo.Context) error {
 }
 
 var VARKEY string = "var-key"
-var CONSTKEY string = "const-key"
+const CONSTKEY string = "const-key"
 
 // @Summary Create User
 // @Description Create new User
