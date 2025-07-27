@@ -115,42 +115,13 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 			Call:       callExpr,
 			BindMethod: bindMethod,
 		}
-
+		argExp := callExpr.Args[0]
+		if unaryExp, ok := callExpr.Args[0].(*ast.UnaryExpr); ok && unaryExp.Op == token.AND {
+			argExp = unaryExp.X
+		}
 		switch bindMethod {
 		case "Bind":
-			switch arg := callExpr.Args[0].(type) {
-			case *ast.UnaryExpr:
-				if arg.Op != token.AND {
-					return true
-				}
-				ident, ok := arg.X.(*ast.Ident)
-				if !ok {
-					return true
-				}
-				obj, ok := h.Pkg.TypesInfo.Uses[ident]
-				if !ok {
-					return true
-				}
-				v, ok := obj.(*types.Var)
-				if !ok || objMap[v] {
-					return true
-				}
-				reqData.Param = v
-
-				// Get underlying struct type
-				typ := v.Type()
-				if ptr, ok := typ.(*types.Pointer); ok {
-					typ = ptr.Elem()
-				}
-				named, ok := typ.(*types.Named)
-				if !ok {
-					return true
-				}
-				typeName := named.Obj() // *types.TypeName
-				if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
-					reqData.ParamDecl = decl
-				}
-				objMap[v] = true
+			switch arg := argExp.(type) {
 			case *ast.Ident:
 				obj, ok := h.Pkg.TypesInfo.Uses[arg]
 				if !ok {
@@ -177,10 +148,10 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 				}
 				objMap[v] = true
 			case *ast.SelectorExpr:
-				
+
 			}
 		case "QueryParam":
-			switch arg := callExpr.Args[0].(type) {
+			switch arg := argExp.(type) {
 			case *ast.Ident:
 				obj, ok := h.Pkg.TypesInfo.Uses[arg]
 				if !ok {
@@ -196,7 +167,7 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 				reqData.BasicLit = arg.Value
 			}
 		case "Param":
-			switch arg := callExpr.Args[0].(type) {
+			switch arg := argExp.(type) {
 			case *ast.Ident:
 				obj, ok := h.Pkg.TypesInfo.Uses[arg]
 				if !ok {
