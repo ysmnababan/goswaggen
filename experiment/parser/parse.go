@@ -89,6 +89,107 @@ func TryParseHandler() {
 			fmt.Println(req.ParamDecl.Specs[0])
 		}
 	}
+	CollectAssignedStringValues(handlerFunc)
+}
+
+// TODO: this function must be called directly inside the SearchBindRequest,
+// this is because the reassigment of a var can be changing the variable value
+func CollectAssignedStringValues(h *HandlerRegistration) map[string]string {
+	out := make(map[string]string)
+	ast.Inspect(h.FuncDecl, func(n ast.Node) bool {
+		switch stmt := n.(type) {
+		case *ast.AssignStmt:
+			CollectFromAssignStmt(h, stmt, out)
+		case *ast.DeclStmt:
+			CollectFromDeclStmt(h, stmt, out)
+		default:
+		}
+		return true
+	})
+	return out
+}
+
+func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[string]string) {
+	// check the lhs is 'ident' or 'selectionExpr'
+	finalKey := ""
+	finalVal := ""
+	if len(n.Lhs) != 1 {
+		// for now, only handle  for simple assigment, not for tuple assigment
+		return
+	}
+	switch lhs := n.Lhs[0].(type) {
+	case *ast.SelectorExpr:
+		// make sure the key itself is a 'string'
+		obj, ok := h.Pkg.TypesInfo.Uses[lhs.Sel]
+		if !ok {
+			return
+		}
+		if obj.Type().String() != "string" {
+			return
+		}
+		finalKey = fmt.Sprintf("%s.%s", lhs.X, lhs.Sel.Name)
+	case *ast.Ident:
+		// TODO, ident can be `struct type` => handle this case later
+		finalKey = lhs.Name
+	default:
+		return
+	}
+
+	// check the rhs to see the value
+	if len(n.Rhs) != 1 {
+		// for now, only handle  for simple assigment, not for tuple assigment
+		return
+	}
+	switch rhs := n.Rhs[0].(type) {
+	case *ast.SelectorExpr:
+		// make sure the key itself is a 'string'.
+		// cover for below case:
+		// _ = <x>.<selectExpr>,
+		// this value already exist in cache, so just retrieve it
+		obj, ok := h.Pkg.TypesInfo.Uses[rhs.Sel]
+		if !ok {
+			return
+		}
+		if obj.Type().String() != "string" {
+			return
+		}
+		selExp := fmt.Sprintf("%s.%s", rhs.X, rhs.Sel.Name)
+		// check in cache
+		value, ok := cache[selExp]
+		if ok {
+			finalVal = value
+		}
+	case *ast.Ident:
+		// case for _ = somevar
+		// the the 'somevar' is a string contains some value
+		obj, ok := h.Pkg.TypesInfo.Uses[rhs]
+		if !ok {
+			return
+		}
+		if obj.Type().String() != "string" {
+			return
+		}
+		// check the value in cache
+		value, ok := cache[rhs.Name]
+		if ok {
+			finalVal = value
+		}
+	case *ast.BasicLit:
+		finalVal = rhs.Value
+	case *ast.CompositeLit:
+		// TODO : handle for composite value
+	default:
+		return
+	}
+
+	if len(finalKey) != 0 && len(finalVal) != 0 {
+		fmt.Printf("key:%v ; val: %v\n", finalKey, finalVal)
+		cache[finalKey] = finalVal
+	}
+}
+
+func CollectFromDeclStmt(h *HandlerRegistration, n *ast.DeclStmt, cache map[string]string) {
+
 }
 
 func SearchBindRequest(ctx *HandlerContext) []*RequestData {
