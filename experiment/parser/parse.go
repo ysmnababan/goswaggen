@@ -68,9 +68,10 @@ func TryParseHandler() {
 	fmt.Println(handlerFunc.GetFullPath())
 	fmt.Println(handlerFunc.GetMethod())
 	handlerCtx := &HandlerContext{
-		RegCtx:            ctx,
-		RegisteredHandler: handlerFunc,
-		ExistingVarMap:    make(map[*types.Var]bool),
+		RegCtx:             ctx,
+		RegisteredHandler:  handlerFunc,
+		ExistingVarMap:     make(map[*types.Var]bool),
+		ResolvedAssignExpr: make(map[string]string),
 	}
 	out := SearchBindRequest(handlerCtx)
 	if len(out) == 0 {
@@ -204,6 +205,12 @@ func resolveQueryParam(ctx *HandlerContext) (*RequestData, bool) {
 	h := ctx.RegisteredHandler
 	objMap := ctx.ExistingVarMap
 	regCtx := ctx.RegCtx
+
+	if arg, ok := (*argExp).(*ast.BasicLit); ok {
+		// c.QueryParam("some-literal")
+		return &RequestData{BasicLit: arg.Value}, true
+	}
+
 	switch arg := (*argExp).(type) {
 	case *ast.Ident:
 		obj, ok := h.Pkg.TypesInfo.Uses[arg]
@@ -220,18 +227,59 @@ func resolveQueryParam(ctx *HandlerContext) (*RequestData, bool) {
 			objMap[v] = true
 			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
 				reqData.BasicLit = basicLit
-				return reqData, true
 			}
+			if basicLit, ok := ctx.ResolvedAssignExpr[v.String()]; ok {
+				reqData.BasicLit = basicLit
+			}
+			return reqData, true
 		case *types.Const:
 			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
 				reqData.BasicLit = basicLit
 				return reqData, true
 			}
+			if basicLit, ok := ctx.ResolvedAssignExpr[v.String()]; ok {
+				reqData.BasicLit = basicLit
+			}
 		default:
 			return nil, false
 		}
-	case *ast.BasicLit:
-		return &RequestData{BasicLit: arg.Value}, true
+	case *ast.SelectorExpr:
+		obj, ok := h.Pkg.TypesInfo.Uses[arg.Sel]
+		if !ok {
+			return nil, false
+		}
+		x, ok := arg.X.(*ast.Ident)
+		if !ok {
+			return nil, false
+		}
+		varname := fmt.Sprintf("%s.%s", x.Name, arg.Sel.Name)
+		fmt.Println("varname::", varname)
+		reqData := &RequestData{}
+		switch v := obj.(type) {
+		case *types.Var:
+			if objMap[v] {
+				return nil, false
+			}
+			reqData.Param = v
+			objMap[v] = true
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+			}
+			if basicLit, ok := ctx.ResolvedAssignExpr[varname]; ok {
+				reqData.BasicLit = basicLit
+			}
+			return reqData, true
+		case *types.Const:
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+				return reqData, true
+			}
+			if basicLit, ok := ctx.ResolvedAssignExpr[varname]; ok {
+				reqData.BasicLit = basicLit
+			}
+		default:
+			return nil, false
+		}
 	default:
 		fmt.Println("def: ", arg)
 		return nil, false
