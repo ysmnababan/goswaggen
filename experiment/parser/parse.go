@@ -106,6 +106,7 @@ func CollectAssignedStringValues(h *HandlerRegistration) map[string]string {
 		}
 		return true
 	})
+	fmt.Println("cached var", out)
 	return out
 }
 
@@ -138,17 +139,16 @@ func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[
 			if !ok {
 				return
 			}
-			// TODO, ident can be `struct type` => handle this case later
 			// Check if the type is string
 			switch t := obj.Type().Underlying().(type) {
 			case *types.Basic:
 				if t.Kind() == types.String {
 					finalKey = obj.Name()
-					fmt.Println("This is a string variable:", finalKey)
+					// fmt.Println("This is a string variable:", finalKey)
 				}
 			case *types.Struct:
 				finalKey = obj.Name()
-				fmt.Println("This is a struct variable:", finalKey)
+				// fmt.Println("This is a struct variable:", finalKey)
 				// isLhsStruct = true
 			default:
 				return
@@ -200,17 +200,54 @@ func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[
 	case *ast.BasicLit:
 		finalVal = rhs.Value
 	case *ast.CompositeLit:
-		// TODO : handle for composite value
+		structField := fetchAllStringField(h.Pkg, rhs)
+		for k, v := range structField {
+			combinedKey := fmt.Sprintf("%s.%s", finalKey, k)
+			cache[combinedKey] = v
+		}
 	default:
 		return
 	}
 
 	if len(finalKey) != 0 && len(finalVal) != 0 {
-		fmt.Printf("key:%v ; val: %v\n", finalKey, finalVal)
+		// fmt.Printf("key:%v ; val: %v\n", finalKey, finalVal)
 		cache[finalKey] = finalVal
 	}
 }
 
+func fetchAllStringField(pkg *packages.Package, n *ast.CompositeLit) map[string]string {
+	if len(n.Elts) == 0 {
+		return nil
+	}
+	out := make(map[string]string)
+	for _, elt := range n.Elts {
+		keyValExpr, ok := elt.(*ast.KeyValueExpr)
+		if !ok {
+			continue
+		}
+		key, ok := keyValExpr.Key.(*ast.Ident)
+		if !ok {
+			continue
+		}
+		// check if it is string or not
+		obj, ok := pkg.TypesInfo.Uses[key]
+		if !ok {
+			continue
+		}
+		// fmt.Println("ELT", elt)
+		if obj.Type().String() != "string" {
+			continue
+		}
+
+		val, ok := keyValExpr.Value.(*ast.BasicLit)
+		if !ok {
+			continue
+		}
+		out[key.Name] = val.Value
+	}
+	// fmt.Println("STRUCT FIELD", out)
+	return out
+}
 func CollectFromDeclStmt(h *HandlerRegistration, n *ast.DeclStmt, cache map[string]string) {
 
 }
