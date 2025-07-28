@@ -2,6 +2,7 @@ package main
 
 import (
 	"go/ast"
+	"go/token"
 	"go/types"
 	"log"
 
@@ -9,14 +10,15 @@ import (
 )
 
 type RegistrationContext struct {
-	Pkgs                  []*packages.Package
-	GroupPath             map[string]string
-	funcDeclToPkgMap      map[*ast.FuncDecl]*packages.Package // cache for faster retrival of a particular package
-	typeFuncToFuncDeclMap map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
-	typeVarToGenDeclMap   map[*types.TypeName]*ast.GenDecl    // cache for faster retrival of a generic declaration
-	CurrentExpr           *ast.CallExpr
-	CurrentFunc           *ast.FuncDecl
-	Level                 int
+	Pkgs                    []*packages.Package
+	GroupPath               map[string]string
+	funcDeclToPkgMap        map[*ast.FuncDecl]*packages.Package // cache for faster retrival of a particular package
+	typeFuncToFuncDeclMap   map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
+	typeVarToGenDeclMap     map[*types.TypeName]*ast.GenDecl    // cache for faster retrival of a typeSpec generic declaration
+	typeGlobalVarToValueMap map[string]string                   // cache for string global variable with it respected value
+	CurrentExpr             *ast.CallExpr
+	CurrentFunc             *ast.FuncDecl
+	Level                   int
 
 	// If a function use an `echo.Group` as an argument,
 	// the variable itself must have actual path which is defined when the function is used.
@@ -27,12 +29,14 @@ type RegistrationContext struct {
 
 func NewRegistrationContext(pkgs []*packages.Package, funDecl *ast.FuncDecl) *RegistrationContext {
 	ctx := &RegistrationContext{
-		funcDeclToPkgMap:      make(map[*ast.FuncDecl]*packages.Package),
-		typeFuncToFuncDeclMap: make(map[*types.Func]*ast.FuncDecl),
-		typeVarToGenDeclMap:   make(map[*types.TypeName]*ast.GenDecl),
-		GroupPath:             make(map[string]string),
-		Pkgs:                  pkgs,
-		CurrentFunc:           funDecl,
+		funcDeclToPkgMap:        make(map[*ast.FuncDecl]*packages.Package),
+		typeFuncToFuncDeclMap:   make(map[*types.Func]*ast.FuncDecl),
+		typeVarToGenDeclMap:     make(map[*types.TypeName]*ast.GenDecl),
+		typeGlobalVarToValueMap: make(map[string]string),
+
+		GroupPath:   make(map[string]string),
+		Pkgs:        pkgs,
+		CurrentFunc: funDecl,
 	}
 	ctx.buildCache()
 	return ctx
@@ -54,10 +58,20 @@ func (c *RegistrationContext) buildCache() {
 					}
 				}
 				if gn, ok := decl.(*ast.GenDecl); ok {
-					if typeSpec, ok := gn.Specs[0].(*ast.TypeSpec); ok {
-						if obj, ok := pkg.TypesInfo.Defs[typeSpec.Name]; ok {
+					switch spec := gn.Specs[0].(type) {
+					case *ast.TypeSpec: // store the `type struct`
+						if obj, ok := pkg.TypesInfo.Defs[spec.Name]; ok {
 							if varObj, ok := obj.(*types.TypeName); ok {
 								typeVarToGenDeclMap[varObj] = gn
+							}
+						}
+					case *ast.ValueSpec: // store the `global var or constant`
+						if obj, ok := pkg.TypesInfo.Defs[spec.Names[0]]; ok {
+							if len(spec.Values) != 1 {
+								continue
+							}
+							if val, ok := spec.Values[0].(*ast.BasicLit); ok && val.Kind == token.STRING {
+								c.typeGlobalVarToValueMap[obj.String()] = val.Value
 							}
 						}
 					}
