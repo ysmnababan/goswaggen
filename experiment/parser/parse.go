@@ -111,6 +111,7 @@ func CollectAssignedStringValues(h *HandlerRegistration) map[string]string {
 
 func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[string]string) {
 	// check the lhs is 'ident' or 'selectionExpr'
+	// isLhsStruct := false
 	finalKey := ""
 	finalVal := ""
 	if len(n.Lhs) != 1 {
@@ -129,8 +130,30 @@ func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[
 		}
 		finalKey = fmt.Sprintf("%s.%s", lhs.X, lhs.Sel.Name)
 	case *ast.Ident:
-		// TODO, ident can be `struct type` => handle this case later
-		finalKey = lhs.Name
+		switch n.Tok {
+		case token.ASSIGN:
+			finalKey = lhs.Name
+		case token.DEFINE:
+			obj, ok := h.Pkg.TypesInfo.Defs[lhs]
+			if !ok {
+				return
+			}
+			// TODO, ident can be `struct type` => handle this case later
+			// Check if the type is string
+			switch t := obj.Type().Underlying().(type) {
+			case *types.Basic:
+				if t.Kind() == types.String {
+					finalKey = obj.Name()
+					fmt.Println("This is a string variable:", finalKey)
+				}
+			case *types.Struct:
+				finalKey = obj.Name()
+				fmt.Println("This is a struct variable:", finalKey)
+				// isLhsStruct = true
+			default:
+				return
+			}
+		}
 	default:
 		return
 	}
