@@ -6,8 +6,9 @@ import (
 )
 
 type HandlerContext struct {
-	RegCtx            *RegistrationContext
-	BindArgExpr       *ast.Expr
-	ExistingVarMap    map[*types.Var]bool
-	RegisteredHandler *HandlerRegistration
+	RegCtx             *RegistrationContext
+	BindArgExpr        *ast.Expr
+	ExistingVarMap     map[*types.Var]bool
+	RegisteredHandler  *HandlerRegistration
+	ResolvedAssignExpr map[string]string
 }
