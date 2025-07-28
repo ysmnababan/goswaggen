@@ -44,6 +44,7 @@ func (h *handler) GetUsers(c echo.Context) error {
 }
 
 var VARKEY string = "var-key"
+
 const CONSTKEY string = "const-key"
 
 // @Summary Create User
@@ -70,8 +71,32 @@ func (h *handler) CreateUser(c echo.Context) error {
 	t.QueryParam(VARKEY)
 	date := t.QueryParam(key)
 	t.QueryParam(req.Email)
-	id := c.Param("id")
 
+	// test for collect assigned string
+	test1 := "test1"
+	c.QueryParam(test1)
+	var test2 = "test2"
+	c.QueryParam(test2)
+	var test3 string = "not test 3"
+	test3 = "test3"
+	c.QueryParam(test3)
+	const test4 = "test4"
+	c.QueryParam(test4)
+
+	testReq5 := UserCreateRequest{
+		Email: "test5",
+	}
+	c.QueryParam(testReq5.Email)
+
+	testReq6 := UserCreateRequest{}
+	testReq6.Email = "test6"
+	c.QueryParam(testReq6.Email)
+	test7 := "test7"
+	testReq7 := UserCreateRequest{}
+	testReq7.Email = test7
+	c.QueryParam(testReq7.Email)
+
+	id := c.Param("id")
 	_ = date
 	_ = id
 	err = c.Validate(req)
