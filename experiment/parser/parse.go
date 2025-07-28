@@ -127,92 +127,21 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 		}
 		switch bindMethod {
 		case "Bind":
-			var ident *ast.Ident
-			switch exp := argExp.(type) {
-			case *ast.Ident:
-				ident = exp
-			case *ast.SelectorExpr:
-				// for case like `<c>.Bind(<some-struct>.<Selector>)`,
-				// extract the <Selector> first
-				ident = exp.Sel
-			default:
+			if ok := resolveBind(ctx, h, &argExp, objMap, reqData); !ok {
 				return true
 			}
-
-			obj, ok := h.Pkg.TypesInfo.Uses[ident]
-			if !ok {
-				return true
-			}
-			v, ok := obj.(*types.Var)
-			if !ok || objMap[v] {
-				return true
-			}
-			reqData.Param = v
-
-			// Get underlying struct type
-			typ := v.Type()
-			if ptr, ok := typ.(*types.Pointer); ok {
-				typ = ptr.Elem()
-			}
-			named, ok := typ.(*types.Named)
-			if !ok {
-				return true
-			}
-			typeName := named.Obj() // *types.TypeName
-			if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
-				reqData.ParamDecl = decl
-			}
-			objMap[v] = true
 		case "QueryParam":
-			switch arg := argExp.(type) {
-			case *ast.Ident:
-				obj, ok := h.Pkg.TypesInfo.Uses[arg]
-				if !ok {
-					return true
-				}
-				switch v := obj.(type) {
-				case *types.Var:
-					if objMap[v] {
-						return true
-					}
-					reqData.Param = v
-					objMap[v] = true
-					if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-						reqData.BasicLit = basicLit
-					}
-				case *types.Const:
-					if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-						reqData.BasicLit = basicLit
-					}
-				default:
-					return true
-				}
-			case *ast.BasicLit:
-				reqData.BasicLit = arg.Value
-			default:
-				fmt.Println("def: ", arg)
+			lit, ok := resolveQueryParam(ctx, h, &argExp, objMap)
+			if !ok {
+				return true
 			}
+			reqData.BasicLit = lit
 		case "Param":
-			switch arg := argExp.(type) {
-			case *ast.Ident:
-				obj, ok := h.Pkg.TypesInfo.Uses[arg]
-				if !ok {
-					return true
-				}
-				v, ok := obj.(*types.Var)
-				if !ok || objMap[v] {
-					return true
-				}
-				reqData.Param = v
-				objMap[v] = true
-				if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-					reqData.BasicLit = basicLit
-				}
-			case *ast.BasicLit:
-				reqData.BasicLit = arg.Value
-			case *ast.SelectorExpr:
-
+			lit, ok := resolveParam(ctx, h, &argExp, objMap)
+			if !ok {
+				return true
 			}
+			reqData.BasicLit = lit
 		default:
 			return true
 		}
@@ -221,4 +150,110 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 	})
 
 	return result
+}
+
+func resolveBind(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool, reqData *RequestData) bool {
+	var paramIdent *ast.Ident
+	switch exp := (*argExp).(type) {
+	case *ast.Ident:
+		paramIdent = exp
+	case *ast.SelectorExpr:
+		// for case like `<c>.Bind(<some-struct>.<Selector>)`,
+		// extract the <Selector> first
+		paramIdent = exp.Sel
+	default:
+		return false
+	}
+
+	obj, ok := h.Pkg.TypesInfo.Uses[paramIdent]
+	if !ok {
+		return false
+	}
+	v, ok := obj.(*types.Var)
+	if !ok || objMap[v] {
+		return false
+	}
+	reqData.Param = v
+
+	// Get underlying struct type
+	typ := v.Type()
+	if ptr, ok := typ.(*types.Pointer); ok {
+		typ = ptr.Elem()
+	}
+	named, ok := typ.(*types.Named)
+	if !ok {
+		return false
+	}
+	typeName := named.Obj() // *types.TypeName
+	if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
+		reqData.ParamDecl = decl
+	}
+	objMap[v] = true
+	return true
+}
+
+func resolveQueryParam(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool) (string, bool) {
+	switch arg := (*argExp).(type) {
+	case *ast.Ident:
+		obj, ok := h.Pkg.TypesInfo.Uses[arg]
+		if !ok {
+			return "", false
+		}
+		switch v := obj.(type) {
+		case *types.Var:
+			if objMap[v] {
+				return "", false
+			}
+			// reqData.Param = v
+			objMap[v] = true
+			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+				return basicLit, true
+			}
+		case *types.Const:
+			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+				return basicLit, true
+			}
+		default:
+			return "", false
+		}
+	case *ast.BasicLit:
+		return arg.Value, true
+	default:
+		fmt.Println("def: ", arg)
+		return "", false
+	}
+	return "", false
+}
+
+func resolveParam(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool) (string, bool) {
+	switch arg := (*argExp).(type) {
+	case *ast.Ident:
+		obj, ok := h.Pkg.TypesInfo.Uses[arg]
+		if !ok {
+			return "", false
+		}
+		switch v := obj.(type) {
+		case *types.Var:
+			if objMap[v] {
+				return "", false
+			}
+			// reqData.Param = v
+			objMap[v] = true
+			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+				return basicLit, true
+			}
+		case *types.Const:
+			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+				return basicLit, true
+			}
+		default:
+			return "", false
+		}
+	case *ast.BasicLit:
+		return arg.Value, true
+	default:
+		fmt.Println("def: ", arg)
+		return "", false
+	}
+	return "", false
 }
