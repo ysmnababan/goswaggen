@@ -210,7 +210,6 @@ func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[
 	}
 
 	if len(finalKey) != 0 && len(finalVal) != 0 {
-		// fmt.Printf("key:%v ; val: %v\n", finalKey, finalVal)
 		cache[finalKey] = finalVal
 	}
 }
@@ -234,7 +233,6 @@ func fetchAllStringField(pkg *packages.Package, n *ast.CompositeLit) map[string]
 		if !ok {
 			continue
 		}
-		// fmt.Println("ELT", elt)
 		if obj.Type().String() != "string" {
 			continue
 		}
@@ -245,11 +243,26 @@ func fetchAllStringField(pkg *packages.Package, n *ast.CompositeLit) map[string]
 		}
 		out[key.Name] = val.Value
 	}
-	// fmt.Println("STRUCT FIELD", out)
 	return out
 }
-func CollectFromDeclStmt(h *HandlerRegistration, n *ast.DeclStmt, cache map[string]string) {
 
+func CollectFromDeclStmt(h *HandlerRegistration, n *ast.DeclStmt, cache map[string]string) {
+	genDecl, ok := n.Decl.(*ast.GenDecl)
+	if !ok {
+		return
+	}
+	// for now, just handle for the 1 assigment param (no tuple)
+	valueSpec, ok := genDecl.Specs[0].(*ast.ValueSpec)
+	if !ok {
+		return
+	}
+
+	key := valueSpec.Names[0].Name
+	val, ok := valueSpec.Values[0].(*ast.BasicLit)
+	if !ok {
+		return
+	}
+	cache[key] = val.Value
 }
 
 func SearchBindRequest(ctx *HandlerContext) []*RequestData {
