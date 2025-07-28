@@ -67,7 +67,12 @@ func TryParseHandler() {
 	fmt.Println(handlerFunc.Func.Name())
 	fmt.Println(handlerFunc.GetFullPath())
 	fmt.Println(handlerFunc.GetMethod())
-	out := SearchBindRequest(ctx, handlerFunc)
+	handlerCtx := &HandlerContext{
+		RegCtx:            ctx,
+		RegisteredHandler: handlerFunc,
+		ExistingVarMap:    make(map[*types.Var]bool),
+	}
+	out := SearchBindRequest(handlerCtx)
 	if len(out) == 0 {
 		log.Println("no requested data ")
 		return
@@ -85,10 +90,9 @@ func TryParseHandler() {
 	}
 }
 
-func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*RequestData {
+func SearchBindRequest(ctx *HandlerContext) []*RequestData {
 	var result []*RequestData
-	objMap := make(map[*types.Var]bool)
-	ast.Inspect(h.FuncDecl, func(n ast.Node) bool {
+	ast.Inspect(ctx.RegisteredHandler.FuncDecl, func(n ast.Node) bool {
 		callExpr, ok := n.(*ast.CallExpr)
 		if !ok {
 			return true
@@ -106,7 +110,7 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 		if !ok {
 			return true
 		}
-		ident, ok := h.Pkg.TypesInfo.Uses[x]
+		ident, ok := ctx.RegisteredHandler.Pkg.TypesInfo.Uses[x]
 		if !ok {
 			return true
 		}
@@ -115,36 +119,34 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 			return true
 		}
 		bindMethod := selExpr.Sel.Name
-		reqData := &RequestData{
-			Call:       callExpr,
-			BindMethod: bindMethod,
-		}
+		reqData := &RequestData{}
 
 		// extract `&req` => `req`
 		argExp := callExpr.Args[0]
 		if unaryExp, ok := callExpr.Args[0].(*ast.UnaryExpr); ok && unaryExp.Op == token.AND {
 			argExp = unaryExp.X
 		}
+		ctx.BindArgExpr = &argExp
 		switch bindMethod {
 		case "Bind":
-			if ok := resolveBind(ctx, h, &argExp, objMap, reqData); !ok {
+			if reqData, ok = resolveBind(ctx); !ok {
 				return true
 			}
 		case "QueryParam":
-			lit, ok := resolveQueryParam(ctx, h, &argExp, objMap)
+			reqData, ok = resolveQueryParam(ctx)
 			if !ok {
 				return true
 			}
-			reqData.BasicLit = lit
 		case "Param":
-			lit, ok := resolveParam(ctx, h, &argExp, objMap)
+			reqData, ok = resolveParam(ctx)
 			if !ok {
 				return true
 			}
-			reqData.BasicLit = lit
 		default:
 			return true
 		}
+		reqData.Call = callExpr
+		reqData.BindMethod = bindMethod
 		result = append(result, reqData)
 		return false
 	})
@@ -152,7 +154,11 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 	return result
 }
 
-func resolveBind(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool, reqData *RequestData) bool {
+func resolveBind(ctx *HandlerContext) (*RequestData, bool) {
+	argExp := ctx.BindArgExpr
+	h := ctx.RegisteredHandler
+	objMap := ctx.ExistingVarMap
+	regCtx := ctx.RegCtx
 	var paramIdent *ast.Ident
 	switch exp := (*argExp).(type) {
 	case *ast.Ident:
@@ -162,19 +168,20 @@ func resolveBind(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.E
 		// extract the <Selector> first
 		paramIdent = exp.Sel
 	default:
-		return false
+		return nil, false
 	}
 
 	obj, ok := h.Pkg.TypesInfo.Uses[paramIdent]
 	if !ok {
-		return false
+		return nil, false
 	}
 	v, ok := obj.(*types.Var)
 	if !ok || objMap[v] {
-		return false
-	}
-	reqData.Param = v
+		return nil, false
 
+	}
+	reqData := new(RequestData)
+	reqData.Param = v
 	// Get underlying struct type
 	typ := v.Type()
 	if ptr, ok := typ.(*types.Pointer); ok {
@@ -182,78 +189,92 @@ func resolveBind(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.E
 	}
 	named, ok := typ.(*types.Named)
 	if !ok {
-		return false
+		return nil, false
 	}
 	typeName := named.Obj() // *types.TypeName
-	if decl, ok := ctx.typeVarToGenDeclMap[typeName]; ok {
+	if decl, ok := regCtx.typeVarToGenDeclMap[typeName]; ok {
 		reqData.ParamDecl = decl
 	}
 	objMap[v] = true
-	return true
+	return reqData, true
 }
 
-func resolveQueryParam(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool) (string, bool) {
+func resolveQueryParam(ctx *HandlerContext) (*RequestData, bool) {
+	argExp := ctx.BindArgExpr
+	h := ctx.RegisteredHandler
+	objMap := ctx.ExistingVarMap
+	regCtx := ctx.RegCtx
 	switch arg := (*argExp).(type) {
 	case *ast.Ident:
 		obj, ok := h.Pkg.TypesInfo.Uses[arg]
 		if !ok {
-			return "", false
+			return nil, false
 		}
+		reqData := &RequestData{}
 		switch v := obj.(type) {
 		case *types.Var:
 			if objMap[v] {
-				return "", false
+				return nil, false
 			}
-			// reqData.Param = v
+			reqData.Param = v
 			objMap[v] = true
-			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-				return basicLit, true
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+				return reqData, true
 			}
 		case *types.Const:
-			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-				return basicLit, true
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+				return reqData, true
 			}
 		default:
-			return "", false
+			return nil, false
 		}
 	case *ast.BasicLit:
-		return arg.Value, true
+		return &RequestData{BasicLit: arg.Value}, true
 	default:
 		fmt.Println("def: ", arg)
-		return "", false
+		return nil, false
 	}
-	return "", false
+	return nil, false
 }
 
-func resolveParam(ctx *RegistrationContext, h *HandlerRegistration, argExp *ast.Expr, objMap map[*types.Var]bool) (string, bool) {
+func resolveParam(ctx *HandlerContext) (*RequestData, bool) {
+	argExp := ctx.BindArgExpr
+	h := ctx.RegisteredHandler
+	objMap := ctx.ExistingVarMap
+	regCtx := ctx.RegCtx
 	switch arg := (*argExp).(type) {
 	case *ast.Ident:
 		obj, ok := h.Pkg.TypesInfo.Uses[arg]
 		if !ok {
-			return "", false
+			return nil, false
 		}
+		reqData := &RequestData{}
 		switch v := obj.(type) {
 		case *types.Var:
 			if objMap[v] {
-				return "", false
+				return nil, false
 			}
-			// reqData.Param = v
+			reqData.Param = v
 			objMap[v] = true
-			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-				return basicLit, true
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+				return reqData, true
 			}
 		case *types.Const:
-			if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
-				return basicLit, true
+			if basicLit, ok := regCtx.typeGlobalVarToValueMap[v.String()]; ok {
+				reqData.BasicLit = basicLit
+				return reqData, true
 			}
 		default:
-			return "", false
+			return nil, false
 		}
 	case *ast.BasicLit:
-		return arg.Value, true
+		return &RequestData{BasicLit: arg.Value}, true
 	default:
 		fmt.Println("def: ", arg)
-		return "", false
+		return nil, false
 	}
-	return "", false
+	return nil, false
 }
