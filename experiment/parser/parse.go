@@ -74,7 +74,11 @@ func TryParseHandler() {
 	}
 
 	for _, req := range out {
-		fmt.Println(req.BindMethod, req.Param, req.BasicLit)
+		param := ""
+		if req.Param != nil {
+			param = req.Param.String()
+		}
+		fmt.Printf("method: %s, param: %v, basicLit: %s\n", req.BindMethod, param, req.BasicLit)
 		if req.ParamDecl != nil {
 			fmt.Println(req.ParamDecl.Specs[0])
 		}
@@ -166,14 +170,27 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 				if !ok {
 					return true
 				}
-				v, ok := obj.(*types.Var)
-				if !ok || objMap[v] {
+				switch v := obj.(type) {
+				case *types.Var:
+					if objMap[v] {
+						return true
+					}
+					reqData.Param = v
+					objMap[v] = true
+					if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+						reqData.BasicLit = basicLit
+					}
+				case *types.Const:
+					if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+						reqData.BasicLit = basicLit
+					}
+				default:
 					return true
 				}
-				reqData.Param = v
-				objMap[v] = true
 			case *ast.BasicLit:
 				reqData.BasicLit = arg.Value
+			default:
+				fmt.Println("def: ", arg)
 			}
 		case "Param":
 			switch arg := argExp.(type) {
@@ -188,6 +205,9 @@ func SearchBindRequest(ctx *RegistrationContext, h *HandlerRegistration) []*Requ
 				}
 				reqData.Param = v
 				objMap[v] = true
+				if basicLit, ok := ctx.typeGlobalVarToValueMap[v.String()]; ok {
+					reqData.BasicLit = basicLit
+				}
 			case *ast.BasicLit:
 				reqData.BasicLit = arg.Value
 			case *ast.SelectorExpr:
