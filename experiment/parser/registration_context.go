@@ -12,10 +12,11 @@ import (
 type RegistrationContext struct {
 	Pkgs                    []*packages.Package
 	GroupPath               map[string]string
-	funcDeclToPkgMap        map[*ast.FuncDecl]*packages.Package // cache for faster retrival of a particular package
-	typeFuncToFuncDeclMap   map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
-	typeVarToGenDeclMap     map[*types.TypeName]*ast.GenDecl    // cache for faster retrival of a typeSpec generic declaration
-	typeGlobalVarToValueMap map[string]string                   // cache for string global variable with it respected value
+	funcDeclToPkgMap        map[*ast.FuncDecl]*packages.Package  // cache for faster retrival of a particular package
+	typeFuncToFuncDeclMap   map[*types.Func]*ast.FuncDecl        // cache for faster retrival of a function declaration
+	typeVarToGenDeclMap     map[*types.TypeName]*ast.GenDecl     // cache for faster retrival of a typeSpec generic declaration
+	typeGlobalVarToValueMap map[string]string                    // cache for string global variable with it respected value
+	packageMap              map[*types.Package]*packages.Package // cache for mapping
 	CurrentExpr             *ast.CallExpr
 	CurrentFunc             *ast.FuncDecl
 	Level                   int
@@ -33,6 +34,7 @@ func NewRegistrationContext(pkgs []*packages.Package, funDecl *ast.FuncDecl) *Re
 		typeFuncToFuncDeclMap:   make(map[*types.Func]*ast.FuncDecl),
 		typeVarToGenDeclMap:     make(map[*types.TypeName]*ast.GenDecl),
 		typeGlobalVarToValueMap: make(map[string]string),
+		packageMap:              make(map[*types.Package]*packages.Package),
 
 		GroupPath:   make(map[string]string),
 		Pkgs:        pkgs,
@@ -46,7 +48,10 @@ func (c *RegistrationContext) buildCache() {
 	declToPkg := make(map[*ast.FuncDecl]*packages.Package)
 	typeFuncToFuncDeclMap := make(map[*types.Func]*ast.FuncDecl)
 	typeVarToGenDeclMap := make(map[*types.TypeName]*ast.GenDecl)
+	packageMap := make(map[*types.Package]*packages.Package)
+
 	for _, pkg := range c.Pkgs {
+		packageMap[pkg.Types] = pkg
 		for _, file := range pkg.Syntax {
 			for _, decl := range file.Decls {
 				if fn, ok := decl.(*ast.FuncDecl); ok {
