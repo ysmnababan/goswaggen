@@ -24,7 +24,8 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Relation between the `c.Bind` with the http method
 - [X] Rule or convention for the http method and the payload, param, or query param
 - [X] Add cache for storing global or const variable
-- [ ] Learn how to add to recognize the payload, param or query param
+- [X] Learn how to add to recognize the payload, param or query param
+- [ ] Traverse the `Bind()` param (as struct) and retrieve the field with associated tag
 - [ ] Learn how to fetch the success and failure response
 
 DEVELOPMENT STAGE: Generating Comment
