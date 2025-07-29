@@ -97,10 +97,11 @@ func TryParseHandler() {
 			log.Println("parameter declaration can't be empty", b)
 			continue
 		}
-		fields := PopulateStructFields(ctx.packageMap, b.PkgTypes, b.ParamDecl)
+		fields := PopulateStructFields(ctx, b.PkgTypes, b.ParamDecl)
 		for _, val := range fields {
 			fmt.Println(*val)
 		}
+		b.FieldLists = fields
 	}
 	// CollectAssignedStringValues(handlerFunc)
 }
@@ -554,11 +555,12 @@ func resolveParam(ctx *HandlerContext) (*RequestData, bool) {
 
 // PopulateStructFields
 // Only for the `Bind` BindMethod
-func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *types.Package, structDecl *ast.GenDecl) []*StructField {
+func PopulateStructFields(ctx *RegistrationContext, pType *types.Package, structDecl *ast.GenDecl) []*StructField {
+	cache := ctx.packageMap
 	result := []*StructField{}
 	pkg, ok := cache[pType]
 	if !ok {
-		log.Println("no pkg found", pkg, cache)
+		log.Println("no pkg found", pType)
 		return nil
 	}
 	ast.Inspect(structDecl, func(n ast.Node) bool {
@@ -566,7 +568,6 @@ func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *typ
 		if !ok {
 			return true
 		}
-		log.Printf("SEARCH FIELD FOR %s\n", typeSpec.Name.String())
 		structType, ok := typeSpec.Type.(*ast.StructType)
 		if !ok {
 			return true
@@ -597,14 +598,14 @@ func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *typ
 				}
 				result = append(result, newField)
 			case *types.Named:
-				// TODO: don't load the outside package
-				fmt.Println("Named type:", t.Obj().Name())
-				fmt.Println("Defined in package:", t.Obj().Pkg().Path())
-
+				typeName := t.Obj()
+				nextStructDecl := ctx.typeVarToGenDeclMap[typeName]
+				out := PopulateStructFields(ctx, t.Obj().Pkg(), nextStructDecl)
+				result = append(result, out...)
 			case *types.Struct:
 				// fmt.Println("Inline struct with", t.NumFields(), "fields")
 			default:
-				fmt.Printf("Unhandled type: %T\n", t)
+				log.Printf("Unhandled type: %v =>>%T\n", field.Names[0].Name, t)
 			}
 		}
 		return true
