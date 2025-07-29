@@ -53,8 +53,8 @@ func (n *HandlerRegistration) GetFullPath() string {
 
 type StructField struct {
 	Name      string
-	Tag       string
-	Type      map[string]string
+	VarType   string
+	Tag       map[string]string
 	IsPointer bool
 }
 type RequestData struct {

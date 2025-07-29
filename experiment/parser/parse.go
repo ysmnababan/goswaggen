@@ -98,7 +98,9 @@ func TryParseHandler() {
 			continue
 		}
 		fields := PopulateStructFields(ctx.packageMap, b.PkgTypes, b.ParamDecl)
-		fmt.Println(fields)
+		for _, val := range fields {
+			fmt.Println(*val)
+		}
 	}
 	// CollectAssignedStringValues(handlerFunc)
 }
@@ -585,17 +587,24 @@ func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *typ
 
 			switch t := typ.(type) {
 			case *types.Basic:
-				fmt.Println("Primitive type:", t.Name())
+				newField := &StructField{
+					IsPointer: isPointer,
+					Name:      field.Names[0].Name,
+					VarType:   t.Name(),
+				}
+				if field.Tag != nil && field.Tag.Value != "" {
+					newField.Tag = ParseTag(field.Tag.Value)
+				}
+				result = append(result, newField)
 			case *types.Named:
+				// TODO: don't load the outside package
 				fmt.Println("Named type:", t.Obj().Name())
 				fmt.Println("Defined in package:", t.Obj().Pkg().Path())
+
 			case *types.Struct:
-				fmt.Println("Inline struct with", t.NumFields(), "fields")
+				// fmt.Println("Inline struct with", t.NumFields(), "fields")
 			default:
 				fmt.Printf("Unhandled type: %T\n", t)
-			}
-			if isPointer {
-				fmt.Println("IS POINTER")
 			}
 		}
 		return true
