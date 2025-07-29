@@ -1,15 +1,16 @@
 package example_feat
 
 type UserCreateRequest struct {
-	Name     string `json:"name" validate:"required"`
-	Email    string `json:"email" validate:"required"`
-	Password string `json:"password" validate:"required"`
-	Personal Personal
+	Name      string  `json:"name" validate:"required"`
+	Email     string  `json:"email" validate:"required"`
+	Password  string  `json:"password" validate:"required"`
+	Birthdate *string `json:"birthdate"`
+	Personal  Personal
 }
 
 type Personal struct {
 	Age   int
-	Hobby string
+	Hobby *string
 }
 type UserResponse struct {
 	Name  string `json:"name"`

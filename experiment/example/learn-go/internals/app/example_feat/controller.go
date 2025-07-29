@@ -60,7 +60,7 @@ const CONSTKEY string = "const-key"
 // @Router /api/v1/users [post]
 func (h *handler) CreateUser(c echo.Context) error {
 	req := UserCreateRequest{}
-	err := c.Bind(&req.Personal)
+	err := c.Bind(&req)
 	if err != nil {
 		return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
 	}

@@ -12,14 +12,17 @@ import (
 type RegistrationContext struct {
 	Pkgs                    []*packages.Package
 	GroupPath               map[string]string
-	funcDeclToPkgMap        map[*ast.FuncDecl]*packages.Package  // cache for faster retrival of a particular package
-	typeFuncToFuncDeclMap   map[*types.Func]*ast.FuncDecl        // cache for faster retrival of a function declaration
-	typeVarToGenDeclMap     map[*types.TypeName]*ast.GenDecl     // cache for faster retrival of a typeSpec generic declaration
-	typeGlobalVarToValueMap map[string]string                    // cache for string global variable with it respected value
-	packageMap              map[*types.Package]*packages.Package // cache for mapping
-	CurrentExpr             *ast.CallExpr
-	CurrentFunc             *ast.FuncDecl
-	Level                   int
+	funcDeclToPkgMap        map[*ast.FuncDecl]*packages.Package // cache for faster retrival of a particular package
+	typeFuncToFuncDeclMap   map[*types.Func]*ast.FuncDecl       // cache for faster retrival of a function declaration
+	typeVarToGenDeclMap     map[*types.TypeName]*ast.GenDecl    // cache for faster retrival of a typeSpec generic declaration
+	typeGlobalVarToValueMap map[string]string                   // cache for string global variable with it respected value
+
+	// packageMap maps types.Package to its corresponding packages.Package,
+	// allowing access to AST and type information across packages.
+	packageMap  map[*types.Package]*packages.Package
+	CurrentExpr *ast.CallExpr
+	CurrentFunc *ast.FuncDecl
+	Level       int
 
 	// If a function use an `echo.Group` as an argument,
 	// the variable itself must have actual path which is defined when the function is used.

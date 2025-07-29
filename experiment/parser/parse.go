@@ -73,21 +73,32 @@ func TryParseHandler() {
 		ExistingVarMap:     make(map[*types.Var]bool),
 		ResolvedAssignExpr: make(map[string]string),
 	}
-	out := PopulateHandlerRequestPayload(handlerCtx)
-	if len(out) == 0 {
+	payloadReqs := PopulateHandlerRequestPayload(handlerCtx)
+	if len(payloadReqs) == 0 {
 		log.Println("no requested data ")
 		return
 	}
 
-	for _, req := range out {
-		param := ""
-		if req.Param != nil {
-			param = req.Param.String()
+	// for _, req := range out {
+	// 	param := ""
+	// 	if req.Param != nil {
+	// 		param = req.Param.String()
+	// 	}
+	// 	fmt.Printf("method: %s, param: %v, basicLit: %s\n", req.BindMethod, param, req.BasicLit)
+	// 	if req.ParamDecl != nil {
+	// 		fmt.Println(req.ParamDecl.Specs[0])
+	// 	}
+	// }
+	for _, b := range payloadReqs {
+		if b.BindMethod != "Bind" {
+			continue
 		}
-		fmt.Printf("method: %s, param: %v, basicLit: %s\n", req.BindMethod, param, req.BasicLit)
-		if req.ParamDecl != nil {
-			fmt.Println(req.ParamDecl.Specs[0])
+		if b.ParamDecl == nil {
+			log.Println("parameter declaration can't be empty", b)
+			continue
 		}
+		fields := PopulateStructFields(ctx.packageMap, b.PkgTypes, b.ParamDecl)
+		fmt.Println(fields)
 	}
 	// CollectAssignedStringValues(handlerFunc)
 }
@@ -359,6 +370,7 @@ func resolveBind(ctx *HandlerContext) (*RequestData, bool) {
 		return nil, false
 	}
 	typeName := named.Obj() // *types.TypeName
+	reqData.PkgTypes = typeName.Pkg()
 	if decl, ok := regCtx.typeVarToGenDeclMap[typeName]; ok {
 		reqData.ParamDecl = decl
 	}
@@ -540,11 +552,31 @@ func resolveParam(ctx *HandlerContext) (*RequestData, bool) {
 
 // PopulateStructFields
 // Only for the `Bind` BindMethod
-func PopulateStructFields(structDecl *ast.GenDecl) []*StructField {
+func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *types.Package, structDecl *ast.GenDecl) []*StructField {
 	result := []*StructField{}
-
+	pkg := cache[pType]
 	ast.Inspect(structDecl, func(n ast.Node) bool {
-		
+		typeSpec, ok := n.(*ast.TypeSpec)
+		if !ok {
+			return true
+		}
+		log.Printf("SEARCH FIELD FOR %s\n", typeSpec.Name.String())
+		structType, ok := typeSpec.Type.(*ast.StructType)
+		if !ok {
+			return true
+		}
+		for _, field := range structType.Fields.List {
+			// check the var type
+			tv, ok := pkg.TypesInfo.Types[field.Type]
+			if !ok {
+				continue
+			}
+			
+			if tv.(*ast.StarExpr)
+			// switch tv.Type.(type) {
+				// case 
+			// }
+		}
 		return true
 	})
 	return result
