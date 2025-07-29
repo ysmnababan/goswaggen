@@ -52,11 +52,10 @@ func (n *HandlerRegistration) GetFullPath() string {
 }
 
 type StructField struct {
-	Name       string
-	Tag        string
-	Type       string
-	IsRequired bool
-	IsNullable bool
+	Name      string
+	Tag       string
+	Type      map[string]string
+	IsPointer bool
 }
 type RequestData struct {
 	Call      *ast.CallExpr // The actual call expression

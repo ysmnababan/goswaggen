@@ -90,6 +90,7 @@ func (c *RegistrationContext) buildCache() {
 	c.funcDeclToPkgMap = declToPkg
 	c.typeFuncToFuncDeclMap = typeFuncToFuncDeclMap
 	c.typeVarToGenDeclMap = typeVarToGenDeclMap
+	c.packageMap = packageMap
 }
 
 func (c *RegistrationContext) GetCurrentPackage() *packages.Package {

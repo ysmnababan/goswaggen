@@ -554,7 +554,11 @@ func resolveParam(ctx *HandlerContext) (*RequestData, bool) {
 // Only for the `Bind` BindMethod
 func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *types.Package, structDecl *ast.GenDecl) []*StructField {
 	result := []*StructField{}
-	pkg := cache[pType]
+	pkg, ok := cache[pType]
+	if !ok {
+		log.Println("no pkg found", pkg, cache)
+		return nil
+	}
 	ast.Inspect(structDecl, func(n ast.Node) bool {
 		typeSpec, ok := n.(*ast.TypeSpec)
 		if !ok {
@@ -567,15 +571,32 @@ func PopulateStructFields(cache map[*types.Package]*packages.Package, pType *typ
 		}
 		for _, field := range structType.Fields.List {
 			// check the var type
+			isPointer := false
 			tv, ok := pkg.TypesInfo.Types[field.Type]
 			if !ok {
 				continue
 			}
-			
-			if tv.(*ast.StarExpr)
-			// switch tv.Type.(type) {
-				// case 
-			// }
+
+			typ := tv.Type
+			if ptr, ok := typ.(*types.Pointer); ok {
+				typ = ptr.Elem()
+				isPointer = true
+			}
+
+			switch t := typ.(type) {
+			case *types.Basic:
+				fmt.Println("Primitive type:", t.Name())
+			case *types.Named:
+				fmt.Println("Named type:", t.Obj().Name())
+				fmt.Println("Defined in package:", t.Obj().Pkg().Path())
+			case *types.Struct:
+				fmt.Println("Inline struct with", t.NumFields(), "fields")
+			default:
+				fmt.Printf("Unhandled type: %T\n", t)
+			}
+			if isPointer {
+				fmt.Println("IS POINTER")
+			}
 		}
 		return true
 	})

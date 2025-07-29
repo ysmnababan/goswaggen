@@ -8,8 +8,8 @@ import (
 )
 
 type Request struct {
-	Name     string
-	Email    string
+	Name     string `query:"Name"`
+	Email    string 
 	Personal Nested
 }
 
@@ -24,13 +24,13 @@ func main() {
 		return c.String(http.StatusOK, "Hello, World!")
 	})
 
-	e.POST("/test-post", postHandler)
+	e.GET("/test-post", postHandler)
 	e.Logger.Fatal(e.Start(":1323"))
 }
 
 func postHandler(c echo.Context) error {
 	req := new(Request)
-	err := c.Bind(&req.Personal.Age)
+	err := c.Bind(req)
 	if err != nil {
 		fmt.Println(err)
 		return err
