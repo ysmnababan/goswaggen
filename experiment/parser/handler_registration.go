@@ -64,10 +64,16 @@ type RequestData struct {
 	ParamDecl *ast.GenDecl  // Declaration of the param
 	BasicLit  string        // for queryparam and param args, e.g. <context>.Param("this")
 
+	// Only for the `Bind()` method for
+	// storing the parameter's package type.
+	// The actual package can be found by searching
+	// through all the package again
+	PkgTypes *types.Package
 	// Body, QueryParam, Param.
 	// When it is 'Body', the Fields will be populated
 	// according to the handler HTTP method.
 	// If its 'POST/PUT/PATCH' => no need to populate the fields
+
 	BindMethod string
 
 	// For storing all the field from a struct when
