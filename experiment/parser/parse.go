@@ -92,24 +92,6 @@ func TryParseHandler() {
 	// CollectAssignedStringValues(handlerFunc)
 }
 
-// TODO: this function must be called directly inside the SearchBindRequest,
-// this is because the reassigment of a var can be changing the variable value
-func CollectAssignedStringValues(h *HandlerRegistration) map[string]string {
-	out := make(map[string]string)
-	ast.Inspect(h.FuncDecl, func(n ast.Node) bool {
-		switch stmt := n.(type) {
-		case *ast.AssignStmt:
-			CollectFromAssignStmt(h, stmt, out)
-		case *ast.DeclStmt:
-			CollectFromDeclStmt(h, stmt, out)
-		default:
-		}
-		return true
-	})
-	fmt.Println("cached var", out)
-	return out
-}
-
 func CollectFromAssignStmt(h *HandlerRegistration, n *ast.AssignStmt, cache map[string]string) {
 	// check the lhs is 'ident' or 'selectionExpr'
 	// isLhsStruct := false
@@ -265,6 +247,7 @@ func CollectFromDeclStmt(h *HandlerRegistration, n *ast.DeclStmt, cache map[stri
 	cache[key] = val.Value
 }
 
+// TODO : handle param for imported constant, or global var
 func SearchBindRequest(ctx *HandlerContext, callExpr *ast.CallExpr) (*RequestData, bool) {
 	if len(callExpr.Args) != 1 {
 		return nil, false
@@ -317,6 +300,7 @@ func SearchBindRequest(ctx *HandlerContext, callExpr *ast.CallExpr) (*RequestDat
 	reqData.BindMethod = bindMethod
 	return reqData, true
 }
+
 func PopulateHandlerRequestPayload(ctx *HandlerContext) []*RequestData {
 	var result []*RequestData
 	ast.Inspect(ctx.RegisteredHandler.FuncDecl, func(n ast.Node) bool {
@@ -334,7 +318,6 @@ func PopulateHandlerRequestPayload(ctx *HandlerContext) []*RequestData {
 		}
 		return true
 	})
-	// fmt.Println("cache", ctx.ResolvedAssignExpr)
 	return result
 }
 
@@ -553,4 +536,16 @@ func resolveParam(ctx *HandlerContext) (*RequestData, bool) {
 	default:
 		return nil, false
 	}
+}
+
+// PopulateStructFields
+// Only for the `Bind` BindMethod
+func PopulateStructFields(structDecl *ast.GenDecl) []*StructField {
+	result := []*StructField{}
+
+	ast.Inspect(structDecl, func(n ast.Node) bool {
+		
+		return true
+	})
+	return result
 }

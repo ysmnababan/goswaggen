@@ -51,10 +51,27 @@ func (n *HandlerRegistration) GetFullPath() string {
 	return n.BasePath + strings.Trim(pathArg.Value, `"`)
 }
 
+type StructField struct {
+	Name       string
+	Tag        string
+	Type       string
+	IsRequired bool
+	IsNullable bool
+}
 type RequestData struct {
-	Call       *ast.CallExpr // The actual call expression
-	Param      *types.Var    // The param type
-	ParamDecl  *ast.GenDecl  // Declaration of the param
-	BindMethod string        // Body, QueryParam, Param
-	BasicLit   string        // for queryparam and param args, e.g. <context>.Param("this")
+	Call      *ast.CallExpr // The actual call expression
+	Param     *types.Var    // The param type
+	ParamDecl *ast.GenDecl  // Declaration of the param
+	BasicLit  string        // for queryparam and param args, e.g. <context>.Param("this")
+
+	// Body, QueryParam, Param.
+	// When it is 'Body', the Fields will be populated
+	// according to the handler HTTP method.
+	// If its 'POST/PUT/PATCH' => no need to populate the fields
+	BindMethod string
+
+	// For storing all the field from a struct when
+	// calling the `Bind()` binding function.
+	// Depends on the BindMethod and HTTP method
+	FieldLists []*StructField
 }
