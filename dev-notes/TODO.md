@@ -25,7 +25,9 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Rule or convention for the http method and the payload, param, or query param
 - [X] Add cache for storing global or const variable
 - [X] Learn how to add to recognize the payload, param or query param
-- [ ] Traverse the `Bind()` param (as struct) and retrieve the field with associated tag
+- [X] Traverse the `Bind()` param (as struct) and retrieve the field with associated tag
+- [ ] Check the `@Produce` type for each `echo` response from documentation
+- [ ] Check how to find the http response from the `return` statement
 - [ ] Learn how to fetch the success and failure response
 
 DEVELOPMENT STAGE: Generating Comment
