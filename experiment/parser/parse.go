@@ -612,3 +612,113 @@ func PopulateStructFields(ctx *RegistrationContext, pType *types.Package, struct
 	})
 	return result
 }
+
+type Inspector interface {
+	Inspect(ast.Node)
+}
+
+type ReturnInspector struct {
+	FunDecl *ast.FuncDecl
+	Pkg     *packages.Package
+	Returns []*ReturnResponse
+}
+
+func NewReturnInspector(node *ast.FuncDecl, pkg *packages.Package) *ReturnInspector {
+	ret := []*ReturnResponse{}
+	return &ReturnInspector{
+		FunDecl: node,
+		Pkg:     pkg,
+		Returns: ret,
+	}
+}
+
+type ReturnResponse struct {
+	ReturnStmt *ast.ReturnStmt
+	StructType string
+	SchemaType string // {object}, string, int, etc
+	StatusCode string
+	IsSuccess  bool
+	AcceptType string //json, xml, string
+}
+
+func (i *ReturnInspector) IsErrorIfStmt(n *ast.IfStmt) bool {
+	binExp, ok := n.Cond.(*ast.BinaryExpr)
+	if !ok {
+		return false
+	}
+	if binExp.Op != token.NEQ {
+		return false
+	}
+	if yIdent, ok := binExp.Y.(*ast.Ident); !ok || yIdent.Name != "nil" {
+		return false
+	}
+	xIdent, ok := binExp.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+	obj, ok := i.Pkg.TypesInfo.Uses[xIdent]
+	if !ok {
+		return false
+	}
+	return types.Identical(obj.Type(), types.Universe.Lookup("error").Type())
+}
+
+// TODO: handle this kind or response
+// c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+func (i *ReturnInspector) IsFmworkStandardResponse(n *ast.ReturnStmt) bool {
+	if len(n.Results) != 1 {
+		return false
+	}
+	selExpr, ok := n.Results[0].(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	x, ok := selExpr.X.(*ast.Ident)
+	if !ok {
+		return false
+	}
+	obj, ok := i.Pkg.TypesInfo.Uses[x]
+	if !ok {
+		return false
+	}
+	if obj.Type().String() != ECHO_CONTEXT_TYPE {
+		return false
+	}
+	if _, ok := ECHO_FRAMEWORK_STANDARD_RESPONSE[selExpr.Sel.Name]; !ok {
+		return false
+	}
+	return true
+}
+
+func (i *ReturnInspector) ResolveReturnResponse(isErrorResponse bool) *ReturnInspector {
+	return nil
+}
+
+func (i *ReturnInspector) Inspect(in ast.Node) {
+	IsErrorResponse := false
+	switch n := in.(type) {
+	case *ast.IfStmt:
+		// extract the `return` statement inside `ifstmt`
+		if !i.IsErrorIfStmt(n) {
+			return
+		}
+		IsErrorResponse = true
+		var retStmt *ast.ReturnStmt
+		for _, stmt := range n.Body.List {
+			if ret, ok := stmt.(*ast.ReturnStmt); ok {
+				retStmt = ret
+				break
+			}
+		}
+		if retStmt == nil {
+			log.Println("no return statement found inside IfStmt")
+			return
+		}
+	case *ast.ReturnStmt:
+		// continue
+	default:
+		return
+	}
+
+	i.ResolveReturnResponse(IsErrorResponse)
+}
