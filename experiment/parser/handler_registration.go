@@ -20,7 +20,8 @@ type HandlerRegistration struct {
 	FuncDecl  *ast.FuncDecl // The implementation of the handler function
 
 	//
-	Request []*RequestData // The requested data can be from body payload, query param or param
+	Request []*RequestData    // The requested data can be from body payload, query param or param
+	Returns []*ReturnResponse // All `return` inside body function
 }
 
 func (n *HandlerRegistration) Print() {

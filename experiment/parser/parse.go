@@ -103,6 +103,15 @@ func TryParseHandler() {
 		}
 		b.FieldLists = fields
 	}
+	ExtractFuncHandlerInfo(handlerCtx)
+	for _, ret := range handlerFunc.Returns {
+		fmt.Println(ret.AcceptType)
+		fmt.Println(ret.IsSuccess)
+		fmt.Println(ret.StatusCode)
+		fmt.Println(ret.StructType)
+		fmt.Println("+++++++++++++")
+		fmt.Println("+++++++++++++")
+	}
 	// CollectAssignedStringValues(handlerFunc)
 }
 
@@ -618,17 +627,18 @@ type Inspector interface {
 }
 
 type ReturnInspector struct {
-	FunDecl *ast.FuncDecl
-	Pkg     *packages.Package
-	Returns []*ReturnResponse
+	// FunDecl *ast.FuncDecl
+	Pkg            *packages.Package
+	Returns        []*ReturnResponse
+	VisitedRetStmt map[*ast.ReturnStmt]bool
 }
 
-func NewReturnInspector(node *ast.FuncDecl, pkg *packages.Package) *ReturnInspector {
+func NewReturnInspector(pkg *packages.Package) *ReturnInspector {
 	ret := []*ReturnResponse{}
 	return &ReturnInspector{
-		FunDecl: node,
-		Pkg:     pkg,
-		Returns: ret,
+		Pkg:            pkg,
+		Returns:        ret,
+		VisitedRetStmt: make(map[*ast.ReturnStmt]bool),
 	}
 }
 
@@ -636,7 +646,7 @@ type ReturnResponse struct {
 	ReturnStmt *ast.ReturnStmt
 	StructType string
 	SchemaType string // {object}, string, int, etc
-	StatusCode string
+	StatusCode int
 	IsSuccess  bool
 	AcceptType string //json, xml, string
 }
@@ -669,7 +679,11 @@ func (i *ReturnInspector) IsFmworkStandardResponse(n *ast.ReturnStmt) bool {
 	if len(n.Results) != 1 {
 		return false
 	}
-	selExpr, ok := n.Results[0].(*ast.SelectorExpr)
+	callExpr, ok := n.Results[0].(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
 	}
@@ -690,12 +704,89 @@ func (i *ReturnInspector) IsFmworkStandardResponse(n *ast.ReturnStmt) bool {
 	return true
 }
 
-func (i *ReturnInspector) ResolveReturnResponse(isErrorResponse bool) *ReturnInspector {
-	return nil
+func (i *ReturnInspector) ResolveStatusCode(n ast.Expr) int {
+	out := 500
+	var identString string
+
+	switch p := n.(type) {
+	case *ast.SelectorExpr:
+		x, ok := p.X.(*ast.Ident)
+		if !ok {
+			return out
+		}
+		if x.Name != "http" {
+			log.Println("status code is not from standard net/http")
+			return out
+		}
+		identString = p.Sel.Name
+	case *ast.Ident:
+		identString = p.Name
+	case *ast.BasicLit:
+		identString = p.Value
+	default:
+		return 500
+	}
+	if code, ok := HTTP_STATUS_CODE_MAPPING[identString]; ok {
+		out = code
+	}
+	return out
+}
+
+func (i *ReturnInspector) ResolvePayloadType(n ast.Expr) string {
+	var ident *ast.Ident
+	switch p := n.(type) {
+	case *ast.SelectorExpr:
+		x, ok := p.X.(*ast.Ident)
+		if !ok {
+			return ""
+		}
+		log.Println("X:", x.Name)
+		ident = p.Sel
+	case *ast.Ident:
+		ident = p
+	}
+	obj, ok := i.Pkg.TypesInfo.Uses[ident]
+	if !ok {
+		return ""
+	}
+	fmt.Println(obj.Name(), "-", obj.Pkg(), "-", obj.Type().String(), "-", obj.String())
+	return obj.Type().String()
+}
+
+func (i *ReturnInspector) ResolveReturnResponse(ret *ast.ReturnStmt, isErrorResponse bool) {
+	result := ReturnResponse{
+		ReturnStmt: ret,
+		IsSuccess:  !isErrorResponse,
+	}
+	if i.IsFmworkStandardResponse(ret) {
+		callExpr := ret.Results[0].(*ast.CallExpr)
+		selExpr := callExpr.Fun.(*ast.SelectorExpr)
+		result.AcceptType = selExpr.Sel.Name
+		paramMap := ECHO_FRAMEWORK_STANDARD_RESPONSE[selExpr.Sel.Name]
+		if paramMap[0] != 0 {
+			fmt.Println("hello")
+			result.StatusCode = i.ResolveStatusCode(callExpr.Args[paramMap[0]-1])
+		}
+		if paramMap[1] != 0 {
+			result.StructType = i.ResolvePayloadType(callExpr.Args[paramMap[1]-1])
+		}
+		i.Returns = append(i.Returns, &result)
+		return
+	}
+	result.AcceptType = "json"
+	if isErrorResponse {
+		result.StatusCode = 500
+		result.StructType = "response.APIResponse" // TODO: change this from config
+	} else {
+		result.StatusCode = 200
+		result.StructType = "response.APIResponse" // TODO: change this from config
+	}
+	i.Returns = append(i.Returns, &result)
 }
 
 func (i *ReturnInspector) Inspect(in ast.Node) {
 	IsErrorResponse := false
+	var retStmt *ast.ReturnStmt
 	switch n := in.(type) {
 	case *ast.IfStmt:
 		// extract the `return` statement inside `ifstmt`
@@ -703,7 +794,6 @@ func (i *ReturnInspector) Inspect(in ast.Node) {
 			return
 		}
 		IsErrorResponse = true
-		var retStmt *ast.ReturnStmt
 		for _, stmt := range n.Body.List {
 			if ret, ok := stmt.(*ast.ReturnStmt); ok {
 				retStmt = ret
@@ -716,9 +806,28 @@ func (i *ReturnInspector) Inspect(in ast.Node) {
 		}
 	case *ast.ReturnStmt:
 		// continue
+		retStmt = n
 	default:
 		return
 	}
+	if ok := i.VisitedRetStmt[retStmt]; ok {
+		return
+	}
+	i.ResolveReturnResponse(retStmt, IsErrorResponse)
+	i.VisitedRetStmt[retStmt] = true
+}
 
-	i.ResolveReturnResponse(IsErrorResponse)
+func ExtractFuncHandlerInfo(ctx *HandlerContext) {
+	ri := NewReturnInspector(ctx.RegisteredHandler.Pkg)
+	inspectorList := []Inspector{
+		ri,
+	}
+
+	ast.Inspect(ctx.RegisteredHandler.FuncDecl, func(n ast.Node) bool {
+		for _, inspector := range inspectorList {
+			inspector.Inspect(n)
+		}
+		return true
+	})
+	ctx.RegisteredHandler.Returns = ri.Returns
 }
