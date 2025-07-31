@@ -17,3 +17,25 @@ var ECHO_REQUEST_DATA_METHOD = map[string]bool{
 	"QueryParam": true,
 	"Param":      true,
 }
+
+// 0 : no status code
+// 1 : status code in 1st param
+var ECHO_FRAMEWORK_STANDARD_RESPONSE = map[string]int{
+	"String":     1,
+	"HTML":       1,
+	"HTMLBlob":   1,
+	"JSON":       1,
+	"JSONPretty": 1,
+	"JSONBlob":   1,
+	"JSONP":      1,
+	"XML":        1,
+	"XMLPretty":  1,
+	"XMLBlob":    1,
+	"File":       1,
+	"Attachment": 0,
+	"Inline":     0,
+	"Blob":       1,
+	"Stream":     1,
+	"NoContent":  1,
+	"Redirect":   1,
+}
