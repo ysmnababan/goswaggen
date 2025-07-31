@@ -52,7 +52,7 @@ func TryParseHandler() {
 		return
 	}
 	fmt.Println(len(handlerRegs))
-	targetHandler := "CreateUser"
+	targetHandler := "Login"
 	var handlerFunc *HandlerRegistration
 	for _, val := range handlerRegs {
 		if val.Func.Name() == targetHandler {
@@ -745,12 +745,23 @@ func (i *ReturnInspector) ResolvePayloadType(n ast.Expr) string {
 	case *ast.Ident:
 		ident = p
 	}
-	obj, ok := i.Pkg.TypesInfo.Uses[ident]
+	vn, ok := i.Pkg.TypesInfo.Types[ident]
 	if !ok {
 		return ""
 	}
-	fmt.Println(obj.Name(), "-", obj.Pkg(), "-", obj.Type().String(), "-", obj.String())
-	return obj.Type().String()
+	vType := vn.Type
+	if p, ok := vType.(*types.Pointer); ok {
+		vType = p.Elem()
+	}
+	named, ok := vType.(*types.Named)
+	if !ok {
+		return ""
+	}
+	obj := named.Obj()
+	fmt.Println(obj.Name(), obj.Pkg().Name())
+	// fmt.Println(obj.Name(), "-", obj.Pkg(), "-", obj.Type().String(), "-", obj.String())
+	// return obj.Type().String()
+	return fmt.Sprintf("%s.%s", obj.Pkg().Name(), obj.Name())
 }
 
 func (i *ReturnInspector) ResolveReturnResponse(ret *ast.ReturnStmt, isErrorResponse bool) {
@@ -764,7 +775,6 @@ func (i *ReturnInspector) ResolveReturnResponse(ret *ast.ReturnStmt, isErrorResp
 		result.AcceptType = selExpr.Sel.Name
 		paramMap := ECHO_FRAMEWORK_STANDARD_RESPONSE[selExpr.Sel.Name]
 		if paramMap[0] != 0 {
-			fmt.Println("hello")
 			result.StatusCode = i.ResolveStatusCode(callExpr.Args[paramMap[0]-1])
 		}
 		if paramMap[1] != 0 {
