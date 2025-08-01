@@ -6,6 +6,8 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"parser/inspector"
+	"parser/inspector/returninspector"
 
 	"golang.org/x/tools/go/packages"
 )
@@ -103,15 +105,7 @@ func TryParseHandler() {
 		}
 		b.FieldLists = fields
 	}
-	ExtractFuncHandlerInfo(handlerCtx)
-	for _, ret := range handlerFunc.Returns {
-		fmt.Println(ret.AcceptType)
-		fmt.Println(ret.IsSuccess)
-		fmt.Println(ret.StatusCode)
-		fmt.Println(ret.StructType)
-		fmt.Println("+++++++++++++")
-		fmt.Println("+++++++++++++")
-	}
+	ExtractFuncHandlerInfoRefactored(handlerCtx)
 	// CollectAssignedStringValues(handlerFunc)
 }
 
@@ -840,4 +834,20 @@ func ExtractFuncHandlerInfo(ctx *HandlerContext) {
 		return true
 	})
 	ctx.RegisteredHandler.Returns = ri.Returns
+}
+
+func ExtractFuncHandlerInfoRefactored(ctx *HandlerContext) {
+	ri := returninspector.NewReturnInspector(ctx)
+	inspectorList := []inspector.Inspector{
+		ri,
+	}
+
+	ast.Inspect(ctx.RegisteredHandler.FuncDecl, func(n ast.Node) bool {
+		for _, inspector := range inspectorList {
+			inspector.Inspect(n)
+		}
+		return true
+	})
+
+	ri.PrintResult()
 }
