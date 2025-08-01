@@ -59,12 +59,12 @@ func (i *EchoReturnProcessor) isFmworkStandardResponse(n *ast.ReturnStmt) bool {
 	if !ok {
 		return false
 	}
-	x, ok := selExpr.X.(*ast.Ident)
+	xIdent, ok := selExpr.X.(*ast.Ident)
 	if !ok {
 		return false
 	}
-	obj, ok := i.typesInfo.Uses[x]
-	if !ok {
+	obj, ok := i.typesInfo.Uses[xIdent]
+	if !ok || obj.Type() == nil {
 		return false
 	}
 	if obj.Type().String() != framework.ECHO_CONTEXT_TYPE {
