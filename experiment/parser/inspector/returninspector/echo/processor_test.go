@@ -8,7 +8,9 @@ import (
 	"go/types"
 	"os"
 	"os/exec"
+	"parser/fileutil"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,27 +79,12 @@ func TestIsErrorIfStmt(t *testing.T) {
 
 func TestIsFmWorkStandardResponse(t *testing.T) {
 	tmp := t.TempDir()
-	err := os.WriteFile(filepath.Join(tmp, "go.mod"), []byte(
-		`
-	module testproj
-
-	go 1.24.4
-
-	require github.com/labstack/echo/v4 v4.13.4
-
-	require (
-		github.com/labstack/gommon v0.4.2 // indirect
-		github.com/mattn/go-colorable v0.1.14 // indirect
-		github.com/mattn/go-isatty v0.0.20 // indirect
-		github.com/valyala/bytebufferpool v1.0.0 // indirect
-		github.com/valyala/fasttemplate v1.2.2 // indirect
-		golang.org/x/crypto v0.38.0 // indirect
-		golang.org/x/net v0.40.0 // indirect
-		golang.org/x/sys v0.33.0 // indirect
-		golang.org/x/text v0.25.0 // indirect
-	)
-		`,
-	), 0644)
+	_, testFilePath, _, _ := runtime.Caller(0)
+	testDir := filepath.Dir(testFilePath)
+	projectRoot, err := fileutil.FindProjectRoot(testDir)
+	require.NoError(t, err)
+	src := filepath.Join(projectRoot, "testutil", "goenv")
+	err = fileutil.CopyDir(src, tmp)
 	require.NoError(t, err)
 	mainCode := `
 	package main
@@ -136,7 +123,7 @@ func TestIsFmWorkStandardResponse(t *testing.T) {
 			packages.NeedTypesInfo,
 		Dir:  tmp, // relative to where you run `go run`
 		Fset: FSET,
-		Env:  append(os.Environ(), "GO111MODULE=on"),
+		Env:  append(os.Environ(), "GO111MODULE=on", "GOFLAGS=-mod=vendor"),
 	}
 	pkgs, err := packages.Load(cfg, "./...") // load add the package
 	for _, pkg := range pkgs {
