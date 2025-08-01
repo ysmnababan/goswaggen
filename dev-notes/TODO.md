@@ -26,9 +26,11 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Add cache for storing global or const variable
 - [X] Learn how to add to recognize the payload, param or query param
 - [X] Traverse the `Bind()` param (as struct) and retrieve the field with associated tag
+- [X] Check how to find the http response from the `return` statement
+- [X] Learn how to fetch the success and failure response
 - [ ] Check the `@Produce` type for each `echo` response from documentation
-- [ ] Check how to find the http response from the `return` statement
-- [ ] Learn how to fetch the success and failure response
+- [ ] Create unit test for the parser
+- [ ] Refactor 
 
 DEVELOPMENT STAGE: Generating Comment
 - [ ] Look up what param need to cover
