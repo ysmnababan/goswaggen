@@ -3,6 +3,8 @@ package main
 import (
 	"go/ast"
 	"go/types"
+
+	"golang.org/x/tools/go/packages"
 )
 
 type HandlerContext struct {
@@ -11,4 +13,8 @@ type HandlerContext struct {
 	ExistingVarMap     map[*types.Var]bool
 	RegisteredHandler  *HandlerRegistration
 	ResolvedAssignExpr map[string]string
+}
+
+func (c *HandlerContext) GetPackage() *packages.Package {
+	return c.RegisteredHandler.Pkg
 }
