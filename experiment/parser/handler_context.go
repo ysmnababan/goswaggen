@@ -18,3 +18,19 @@ type HandlerContext struct {
 func (c *HandlerContext) GetPackage() *packages.Package {
 	return c.RegisteredHandler.Pkg
 }
+
+func (c *HandlerContext) GetTypesInfo() *types.Info {
+	return c.RegisteredHandler.Pkg.TypesInfo
+}
+
+func (c *HandlerContext) GetTypeNameToGenDeclCache() map[*types.TypeName]*ast.GenDecl {
+	return c.RegCtx.typeVarToGenDeclMap
+}
+
+func (c *HandlerContext) GetTypePackageCache() map[*types.Package]*packages.Package {
+	return c.RegCtx.packageMap
+}
+
+func (c *HandlerContext) GetTypeGlobalVarToValueMap() map[string]string {
+	return c.RegCtx.typeGlobalVarToValueMap
+}
