@@ -9,18 +9,16 @@ import (
 	"parser/context"
 	"parser/framework"
 	"parser/model"
-
-	"golang.org/x/tools/go/packages"
 )
 
 type EchoReturnProcessor struct {
-	pkg            *packages.Package
+	typesInfo      *types.Info
 	visitedRetStmt map[*ast.ReturnStmt]bool
 }
 
 func NewReturnInspector(hc context.HandlerContext) *EchoReturnProcessor {
 	return &EchoReturnProcessor{
-		pkg:            hc.GetPackage(),
+		typesInfo:      hc.GetTypesInfo(),
 		visitedRetStmt: make(map[*ast.ReturnStmt]bool),
 	}
 }
@@ -40,7 +38,7 @@ func (i *EchoReturnProcessor) isErrorIfStmt(n *ast.IfStmt) bool {
 	if !ok {
 		return false
 	}
-	obj, ok := i.pkg.TypesInfo.Uses[xIdent]
+	obj, ok := i.typesInfo.Uses[xIdent]
 	if !ok {
 		return false
 	}
@@ -65,7 +63,7 @@ func (i *EchoReturnProcessor) isFmworkStandardResponse(n *ast.ReturnStmt) bool {
 	if !ok {
 		return false
 	}
-	obj, ok := i.pkg.TypesInfo.Uses[x]
+	obj, ok := i.typesInfo.Uses[x]
 	if !ok {
 		return false
 	}
@@ -119,7 +117,7 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 	case *ast.Ident:
 		ident = p
 	}
-	vn, ok := i.pkg.TypesInfo.Types[ident]
+	vn, ok := i.typesInfo.Types[ident]
 	if !ok {
 		return ""
 	}
