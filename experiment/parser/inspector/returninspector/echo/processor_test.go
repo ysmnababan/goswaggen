@@ -235,3 +235,106 @@ func somefun14(c echo.Context) error {
 	assert.Equal(t, 15, len(retStmt))
 	assert.Equal(t, 15, trueCount)
 }
+
+func TestIsFmWorkStandardResponse_AllFalse(t *testing.T) {
+	tmp := t.TempDir()
+	var err error
+	src, err := testutil.GetVendorTestPath()
+	require.NoError(t, err)
+	err = fileutil.CopyDir(src, tmp)
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"github.com/labstack/echo/v4"
+	)
+	type errorResponse struct{
+		Err error
+		Message string
+	}
+	type User struct{
+		Name string
+		Email string
+	}
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return nil
+		})
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func somefun(c echo.Context) error {
+		err:= c.Bind(&User{})
+		return err
+	}
+	func somefun2(c echo.Context) error {
+		e:=&errorResponse{}
+		return e.Err
+	}
+
+	func somefun3(c echo.Context) error {
+		e:=&errorResponse{}
+		return e.Err
+	}
+
+	func somefun4(c echo.Context) error {
+		return nil 
+	}
+	`
+	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0644)
+	require.NoError(t, err)
+
+	// run `go mod tidy`
+	cmd := exec.Command("go", "mod", "tidy")
+	cmd.Dir = tmp
+	cmd.Env = append(os.Environ(), "GO111MODULE=on")
+	output, err := cmd.CombinedOutput()
+	require.NoError(t, err, string(output))
+
+	FSET := token.NewFileSet()
+	cfg := &packages.Config{
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedImports |
+			packages.NeedTypes |
+			packages.NeedSyntax |
+			packages.NeedTypesInfo,
+		Dir:  tmp, // relative to where you run `go run`
+		Fset: FSET,
+		Env:  append(os.Environ(), "GO111MODULE=on", "GOFLAGS=-mod=vendor"),
+	}
+	pkgs, err := packages.Load(cfg, "./...") // load add the package
+	for _, pkg := range pkgs {
+		for _, e := range pkg.Errors {
+			t.Fatalf("package load error: %v", e)
+		}
+	}
+	require.NoError(t, err)
+	retStmt := []*ast.ReturnStmt{}
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Syntax {
+			ast.Inspect(file, func(n ast.Node) bool {
+				if ret, ok := n.(*ast.ReturnStmt); ok {
+					// fmt.Println(ret.Results[0])
+					retStmt = append(retStmt, ret)
+					return false
+				}
+				return true // continue walking
+			})
+		}
+	}
+	// execute
+	falseCount := 0
+	p := EchoReturnProcessor{typesInfo: pkgs[0].TypesInfo}
+	for _, stmt := range retStmt {
+		if !p.isFmworkStandardResponse(stmt) {
+			falseCount++
+		}
+	}
+	// assert
+	assert.Equal(t, 1, len(pkgs))
+	assert.Equal(t, 5, len(retStmt))
+	assert.Equal(t, 5, falseCount)
+}
