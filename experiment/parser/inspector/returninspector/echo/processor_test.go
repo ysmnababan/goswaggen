@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"parser/fileutil"
+	"parser/model"
 	"parser/testutil"
 	"path/filepath"
 	"testing"
@@ -560,6 +561,192 @@ func TestMatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.Equal(t, tt.expected, p.Match(tt.stmt))
+		})
+	}
+}
+
+func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
+	p := &EchoReturnProcessor{
+		typesInfo: &types.Info{
+			Types: make(map[ast.Expr]types.TypeAndValue),
+			Uses:  make(map[*ast.Ident]types.Object),
+		},
+	}
+	pkg := types.NewPackage("myPkg", "myPkg")
+	tn := types.NewTypeName(0, pkg, "Wrap", nil)
+	x := ast.NewIdent("response")
+	fun := &ast.SelectorExpr{
+		X:   x,
+		Sel: ast.NewIdent("Wrap"),
+	}
+	p.typesInfo.Uses[x] = tn
+	tests := []struct {
+		name     string
+		isError  bool
+		retStmt  *ast.ReturnStmt
+		expected model.ReturnResponse
+	}{
+		{
+			name:    "default error",
+			isError: true,
+			retStmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Fun: fun,
+					},
+				},
+			},
+			expected: model.ReturnResponse{
+				StructType: "response.APIResponse",
+				StatusCode: 500,
+				IsSuccess:  false,
+				AcceptType: "json",
+			},
+		},
+		{
+			name:    "default success",
+			isError: false,
+			retStmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Fun: fun,
+					},
+				},
+			},
+			expected: model.ReturnResponse{
+				StructType: "response.APIResponse",
+				StatusCode: 200,
+				IsSuccess:  true,
+				AcceptType: "json",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.resolveReturnResponse(tt.retStmt, tt.isError)
+			assert.Equal(t, tt.expected.AcceptType, got.AcceptType)
+			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
+			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
+			assert.Equal(t, tt.expected.StructType, got.StructType)
+		})
+	}
+}
+
+func TestResolveReturnResponse_StandardResponse(t *testing.T) {
+	p := &EchoReturnProcessor{
+		typesInfo: &types.Info{
+			Types: make(map[ast.Expr]types.TypeAndValue),
+			Uses:  make(map[*ast.Ident]types.Object),
+		},
+	}
+	echopkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
+	echotypeName := types.NewTypeName(0, echopkg, "Context", nil)
+	echonamed := types.NewNamed(echotypeName, nil, nil)
+	x := ast.NewIdent("c")
+
+	jsonFun := &ast.SelectorExpr{
+		X:   x,
+		Sel: ast.NewIdent("JSON"),
+	}
+	stringFun := &ast.SelectorExpr{
+		X:   x,
+		Sel: ast.NewIdent("String"),
+	}
+	p.typesInfo.Uses[x] = echonamed.Obj()
+
+	pkg := types.NewPackage("myPkg", "myPkg")
+	retStruct := types.NewTypeName(0, pkg, "User", nil)
+	named := types.NewNamed(retStruct, nil, nil)
+	returnSelectorExpr := &ast.SelectorExpr{
+		X:   ast.NewIdent("myPkg"),
+		Sel: ast.NewIdent("User"),
+	}
+	badReqParam := &ast.SelectorExpr{
+		X:   ast.NewIdent("http"),
+		Sel: ast.NewIdent("StatusBadRequest"),
+	}
+	statusOkParam := &ast.SelectorExpr{
+		X:   ast.NewIdent("http"),
+		Sel: ast.NewIdent("StatusOK"),
+	}
+	p.typesInfo.Types[returnSelectorExpr.Sel] = types.TypeAndValue{Type: named}
+	tests := []struct {
+		name     string
+		isError  bool
+		retStmt  *ast.ReturnStmt
+		expected model.ReturnResponse
+	}{
+		{
+			name:    "JSON return false",
+			isError: true,
+			retStmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Args: []ast.Expr{
+							badReqParam,
+							returnSelectorExpr,
+						},
+						Fun: jsonFun,
+					},
+				},
+			},
+			expected: model.ReturnResponse{
+				StructType: "myPkg.User",
+				StatusCode: 400,
+				IsSuccess:  false,
+				AcceptType: "JSON",
+			},
+		},
+		{
+			name:    "JSON Success",
+			isError: true,
+			retStmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Args: []ast.Expr{
+							statusOkParam,
+							returnSelectorExpr,
+						},
+						Fun: jsonFun,
+					},
+				},
+			},
+			expected: model.ReturnResponse{
+				StructType: "myPkg.User",
+				StatusCode: 200,
+				IsSuccess:  true,
+				AcceptType: "JSON",
+			},
+		},
+		{
+			name:    "String Success",
+			isError: true,
+			retStmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Args: []ast.Expr{
+							statusOkParam,
+							&ast.BasicLit{Value: "output"},
+						},
+						Fun: stringFun,
+					},
+				},
+			},
+			expected: model.ReturnResponse{
+				StructType: "",
+				StatusCode: 200,
+				IsSuccess:  true,
+				AcceptType: "String",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.resolveReturnResponse(tt.retStmt, tt.isError)
+			assert.Equal(t, tt.expected.AcceptType, got.AcceptType)
+			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
+			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
+			assert.Equal(t, tt.expected.StructType, got.StructType)
 		})
 	}
 }
