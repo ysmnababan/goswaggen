@@ -27,11 +27,9 @@ func NewReturnInspector(hc context.HandlerContext) *ReturnInspector {
 
 func (ri *ReturnInspector) Inspect(n ast.Node) {
 	for _, p := range ri.processors {
-		if p.Match(n) {
-			retResponse := p.Process(n)
-			if retResponse != nil {
-				ri.Result = append(ri.Result, retResponse)
-			}
+		retResponse := p.Process(n)
+		if retResponse != nil {
+			ri.Result = append(ri.Result, retResponse)
 		}
 	}
 }

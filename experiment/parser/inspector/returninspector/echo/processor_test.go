@@ -338,3 +338,68 @@ func TestIsFmWorkStandardResponse_AllFalse(t *testing.T) {
 	assert.Equal(t, 5, len(retStmt))
 	assert.Equal(t, 5, falseCount)
 }
+
+func TestResolveStatusCode(t *testing.T) {
+	processor := &EchoReturnProcessor{}
+
+	tests := []struct {
+		name string
+		expr ast.Expr
+		want int
+	}{
+		{
+			name: "SelectorExpr http.StatusOK",
+			expr: &ast.SelectorExpr{
+				X:   &ast.Ident{Name: "http"},
+				Sel: &ast.Ident{Name: "StatusOK"},
+			},
+			want: 200,
+		},
+		{
+			name: "SelectorExpr not http",
+			expr: &ast.SelectorExpr{
+				X:   &ast.Ident{Name: "custom"},
+				Sel: &ast.Ident{Name: "StatusBadRequest"},
+			},
+			want: 500, // Should reject anything not prefixed with "http"
+		},
+		{
+			name: "Ident StatusBadRequest",
+			expr: &ast.Ident{Name: "StatusBadRequest"},
+			want: 400,
+		},
+		{
+			name: "BasicLit \"StatusTeapot\"",
+			expr: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: "StatusTeapot",
+			},
+			want: 418,
+		},
+		{
+			name: "BasicLit using number status code",
+			expr: &ast.BasicLit{
+				Kind:  token.STRING,
+				Value: "200",
+			},
+			want: 200,
+		},
+		{
+			name: "Unknown Ident",
+			expr: &ast.Ident{Name: "SomethingElse"},
+			want: 500,
+		},
+		{
+			name: "Unsupported Expr Type",
+			expr: &ast.CallExpr{},
+			want: 500,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := processor.resolveStatusCode(tt.expr)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
