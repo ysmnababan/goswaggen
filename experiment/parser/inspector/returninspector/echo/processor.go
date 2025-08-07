@@ -136,11 +136,10 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isErrorResponse bool) *model.ReturnResponse {
 	result := model.ReturnResponse{
 		ReturnStmt: ret,
-		IsSuccess:  !isErrorResponse,
 	}
-	if i.Match(ret) {
-		result.FrameWork = "echo"
-	}
+	// if i.Match(ret) {
+	// 	result.FrameWork = "echo"
+	// }
 	if i.isFmworkStandardResponse(ret) {
 		callExpr := ret.Results[0].(*ast.CallExpr)
 		selExpr := callExpr.Fun.(*ast.SelectorExpr)
@@ -152,13 +151,18 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		if paramMap[1] != 0 {
 			result.StructType = i.resolvePayloadType(callExpr.Args[paramMap[1]-1])
 		}
+		if result.StatusCode/100 == 2 {
+			result.IsSuccess = true
+		}
 		return &result
 	}
 	result.AcceptType = "json"
 	if isErrorResponse {
+		result.IsSuccess = false
 		result.StatusCode = 500
 		result.StructType = "response.APIResponse" // TODO: change this from config
 	} else {
+		result.IsSuccess = true
 		result.StatusCode = 200
 		result.StructType = "response.APIResponse" // TODO: change this from config
 	}
