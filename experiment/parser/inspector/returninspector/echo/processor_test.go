@@ -403,3 +403,73 @@ func TestResolveStatusCode(t *testing.T) {
 		})
 	}
 }
+
+
+func TestResolvePayloadType(t *testing.T) {
+	pkg := types.NewPackage("mypkg", "mypkg")
+
+	myStruct := types.NewTypeName(0, pkg, "MyStruct", nil)
+	named := types.NewNamed(myStruct, nil, nil)
+
+	processor := &EchoReturnProcessor{
+		typesInfo: &types.Info{
+			Types: map[ast.Expr]types.TypeAndValue{},
+		},
+	}
+
+	// Prepare AST expressions
+	identExpr := &ast.Ident{Name: "MyStruct"}
+	selectorExpr := &ast.SelectorExpr{
+		X:   &ast.Ident{Name: "mypkg"},
+		Sel: &ast.Ident{Name: "MyStruct"},
+	}
+
+	// Add type mappings (both for ident and selector's Sel)
+	processor.typesInfo.Types[identExpr] = types.TypeAndValue{Type: named}
+	processor.typesInfo.Types[selectorExpr.Sel] = types.TypeAndValue{Type: named}
+
+	tests := []struct {
+		name     string
+		expr     ast.Expr
+		expected string
+	}{
+		{
+			name:     "Ident",
+			expr:     identExpr,
+			expected: "mypkg.MyStruct",
+		},
+		{
+			name:     "SelectorExpr",
+			expr:     selectorExpr,
+			expected: "mypkg.MyStruct",
+		},
+		{
+			name:     "Unknown expr",
+			expr:     &ast.CallExpr{},
+			expected: "",
+		},
+		{
+			name:     "Unmapped Ident",
+			expr:     &ast.Ident{Name: "Unknown"},
+			expected: "",
+		},
+		{
+			name: "Pointer to Named type",
+			expr: &ast.Ident{Name: "PtrStruct"},
+		},
+	}
+
+	// Add pointer case to typesInfo
+	ptrStructIdent := &ast.Ident{Name: "PtrStruct"}
+	ptrType := types.NewPointer(named)
+	processor.typesInfo.Types[ptrStructIdent] = types.TypeAndValue{Type: ptrType}
+	tests[4].expr = ptrStructIdent
+	tests[4].expected = "mypkg.MyStruct"
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := processor.resolvePayloadType(tt.expr)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
