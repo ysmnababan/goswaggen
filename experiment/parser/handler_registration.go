@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"parser/model"
 	"strings"
 
 	"golang.org/x/tools/go/packages"
@@ -22,6 +23,9 @@ type HandlerRegistration struct {
 	//
 	Request []*RequestData // The requested data can be from body payload, query param or param
 	// Returns []*ReturnResponse // All `return` inside body function
+
+	PayloadInfo    []*model.PayloadInfo
+	ReturnResponse []*model.ReturnResponse
 }
 
 func (n *HandlerRegistration) Print() {
@@ -50,6 +54,18 @@ func (n *HandlerRegistration) GetMethod() string {
 func (n *HandlerRegistration) GetFullPath() string {
 	pathArg := n.Call.Args[0].(*ast.BasicLit)
 	return n.BasePath + strings.Trim(pathArg.Value, `"`)
+}
+
+func (n *HandlerRegistration) GetFrameworkName() string {
+	return "echo"
+}
+
+func (n *HandlerRegistration) GetPayloadInfos() []*model.PayloadInfo {
+	return n.PayloadInfo
+}
+
+func (n *HandlerRegistration) ReturnResponses() []*model.ReturnResponse {
+	return n.ReturnResponse
 }
 
 type StructField struct {

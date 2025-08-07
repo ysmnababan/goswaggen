@@ -67,7 +67,7 @@ func TryParseHandler() {
 		log.Printf("handler with name '%s' was not found\n", targetHandler)
 		return
 	}
-	fmt.Println(handlerFunc.Func.Name())
+	fmt.Println(handlerFunc.GetFuncName())
 	fmt.Println(handlerFunc.GetFullPath())
 	fmt.Println(handlerFunc.GetMethod())
 	handlerCtx := &HandlerContext{
@@ -95,4 +95,6 @@ func ExtractFuncHandlerInfoRefactored(ctx *HandlerContext) {
 
 	ri.PrintResult()
 	pi.PrintResult()
+	ctx.RegisteredHandler.PayloadInfo = pi.Results
+	ctx.RegisteredHandler.ReturnResponse = ri.Results
 }
