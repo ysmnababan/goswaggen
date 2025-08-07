@@ -1,7 +1,6 @@
 package echo
 
 import (
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -9,8 +8,8 @@ import (
 	"os"
 	"os/exec"
 	"parser/fileutil"
+	"parser/testutil"
 	"path/filepath"
-	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -77,13 +76,11 @@ func TestIsErrorIfStmt(t *testing.T) {
 	assert.Equal(t, 2, errorIfStmtCounter)
 }
 
-func TestIsFmWorkStandardResponse(t *testing.T) {
+func TestIsFmWorkStandardResponse_AllTrue(t *testing.T) {
 	tmp := t.TempDir()
-	_, testFilePath, _, _ := runtime.Caller(0)
-	testDir := filepath.Dir(testFilePath)
-	projectRoot, err := fileutil.FindProjectRoot(testDir)
+	var err error
+	src, err := testutil.GetVendorTestPath()
 	require.NoError(t, err)
-	src := filepath.Join(projectRoot, "testutil", "goenv")
 	err = fileutil.CopyDir(src, tmp)
 	require.NoError(t, err)
 	mainCode := `
@@ -91,7 +88,7 @@ func TestIsFmWorkStandardResponse(t *testing.T) {
 
 	import (
 		"net/http"
-
+		"os"
 		"github.com/labstack/echo/v4"
 	)
 
@@ -102,6 +99,86 @@ func TestIsFmWorkStandardResponse(t *testing.T) {
 		})
 		e.Logger.Fatal(e.Start(":1323"))
 	}
+
+func somefun(c echo.Context) error {
+	return c.HTML(http.StatusOK, "<strong>Hello, World!</strong>")
+}
+type User struct{
+	Name string
+	Email string
+}
+func somefun2(c echo.Context) error {
+	u := &User{
+		Name:  "Jon",
+		Email: "jon@labstack.com",
+	}
+	return c.JSON(http.StatusOK, u)
+}
+
+func somefun3(c echo.Context) error {
+	u := &User{
+		Name:  "Jon",
+		Email: "joe@labstack.com",
+	}
+	return c.JSONPretty(http.StatusOK, u, "  ")
+}
+
+func somefun4(c echo.Context) error {
+	encodedJSON := []byte{} // Encoded JSON from external source
+	return c.JSONBlob(http.StatusOK, encodedJSON)
+}
+
+func somefun5(c echo.Context) error {
+	u := &User{
+		Name:  "Jon",
+		Email: "jon@labstack.com",
+	}
+	return c.XML(http.StatusOK, u)
+}
+
+func somefun6(c echo.Context) error {
+	u := &User{
+		Name:  "Jon",
+		Email: "joe@labstack.com",
+	}
+	return c.XMLPretty(http.StatusOK, u, "  ")
+}
+
+func somefun7(c echo.Context) error {
+	encodedXML := []byte{} // Encoded XML from external source
+	return c.XMLBlob(http.StatusOK, encodedXML)
+}
+
+func somefun8(c echo.Context) error {
+	return c.File("<PATH_TO_YOUR_FILE>")
+}
+
+func somefun9(c echo.Context) error {
+	return c.Attachment("<PATH_TO_YOUR_FILE>", "<ATTACHMENT_NAME>")
+}
+
+func somefun10(c echo.Context) error {
+	return c.Inline("<PATH_TO_YOUR_FILE>", "another string")
+}
+
+func somefun11(c echo.Context) (err error) {
+	data := []byte("0306703,0035866,NO_ACTION,06/19/2006, 0086003,UPDATED,06/19/2006")
+	return c.Blob(http.StatusOK, "text/csv", data)
+}
+
+func somefun12(c echo.Context) error {
+	f, _ := os.Open("<PATH_TO_IMAGE>")
+	defer f.Close()
+	return c.Stream(http.StatusOK, "image/png", f)
+}
+
+func somefun13(c echo.Context) error {
+	return c.NoContent(http.StatusOK)
+}
+
+func somefun14(c echo.Context) error {
+	return c.Redirect(http.StatusMovedPermanently, "<URL>")
+}
 	`
 	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0644)
 	require.NoError(t, err)
@@ -137,7 +214,7 @@ func TestIsFmWorkStandardResponse(t *testing.T) {
 		for _, file := range pkg.Syntax {
 			ast.Inspect(file, func(n ast.Node) bool {
 				if ret, ok := n.(*ast.ReturnStmt); ok {
-					fmt.Println(ret.Results[0])
+					// fmt.Println(ret.Results[0])
 					retStmt = append(retStmt, ret)
 					return false
 				}
@@ -146,12 +223,15 @@ func TestIsFmWorkStandardResponse(t *testing.T) {
 		}
 	}
 	// execute
+	trueCount := 0
 	p := EchoReturnProcessor{typesInfo: pkgs[0].TypesInfo}
 	for _, stmt := range retStmt {
-		assert.True(t, p.isFmworkStandardResponse(stmt))
+		if p.isFmworkStandardResponse(stmt) {
+			trueCount++
+		}
 	}
-	// require
-	assert.Equal(t, 1, len(pkgs))
 	// assert
-	assert.Equal(t, 1, len(retStmt))
+	assert.Equal(t, 1, len(pkgs))
+	assert.Equal(t, 15, len(retStmt))
+	assert.Equal(t, 15, trueCount)
 }
