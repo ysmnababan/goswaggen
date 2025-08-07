@@ -404,7 +404,6 @@ func TestResolveStatusCode(t *testing.T) {
 	}
 }
 
-
 func TestResolvePayloadType(t *testing.T) {
 	pkg := types.NewPackage("mypkg", "mypkg")
 
@@ -470,6 +469,97 @@ func TestResolvePayloadType(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := processor.resolvePayloadType(tt.expr)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestMatch(t *testing.T) {
+	echopkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
+	echotypeName := types.NewTypeName(0, echopkg, "Context", nil)
+	echonamed := types.NewNamed(echotypeName, nil, nil)
+	echoFun := ast.NewIdent("JSON")
+
+	mypkg := types.NewPackage("mypkg", "mypkg")
+	mytypeName := types.NewTypeName(0, mypkg, "Wrap", nil)
+	mynamed := types.NewNamed(mytypeName, nil, nil)
+	myFun := ast.NewIdent("ErrorWrap")
+
+	p := &EchoReturnProcessor{
+		typesInfo: &types.Info{
+			Uses: make(map[*ast.Ident]types.Object),
+		},
+	}
+	p.typesInfo.Uses[echoFun] = echonamed.Obj()
+	p.typesInfo.Uses[myFun] = mynamed.Obj()
+
+	tests := []struct {
+		name     string
+		stmt     ast.Node
+		expected bool
+	}{
+		{
+			name: "not return stmt",
+			stmt: &ast.BasicLit{
+				Value: "some-string",
+			},
+			expected: false,
+		},
+		{
+			name: "no result",
+			stmt: &ast.ReturnStmt{
+				Results: []ast.Expr{},
+			},
+			expected: false,
+		},
+		{
+			name: "len result > 1",
+			stmt: &ast.ReturnStmt{
+				Results: []ast.Expr{&ast.BasicLit{}, &ast.BasicLit{}},
+			},
+			expected: false,
+		},
+		{
+			name: "echo.JSON()",
+			stmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Fun: &ast.SelectorExpr{
+							X:   ast.NewIdent("c"),
+							Sel: echoFun,
+						},
+					},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "mypkg.ErrorWrap()",
+			stmt: &ast.ReturnStmt{
+				Results: []ast.Expr{
+					&ast.CallExpr{
+						Fun: &ast.SelectorExpr{
+							X:   ast.NewIdent("c"),
+							Sel: myFun,
+						},
+					},
+				},
+			},
+			expected: false,
+		},
+		{
+			name:     "plain text",
+			stmt:     &ast.BasicLit{Value: "value"},
+			expected: false,
+		},
+		{
+			name:     "plain error",
+			stmt:     &ast.Ident{Name: "err"},
+			expected: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, p.Match(tt.stmt))
 		})
 	}
 }
