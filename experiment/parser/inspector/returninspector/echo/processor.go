@@ -138,6 +138,9 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		ReturnStmt: ret,
 		IsSuccess:  !isErrorResponse,
 	}
+	if i.Match(ret) {
+		result.FrameWork = "echo"
+	}
 	if i.isFmworkStandardResponse(ret) {
 		callExpr := ret.Results[0].(*ast.CallExpr)
 		selExpr := callExpr.Fun.(*ast.SelectorExpr)
@@ -199,6 +202,25 @@ func (i *EchoReturnProcessor) Name() string {
 	return "echo return processor"
 }
 
-func (i *EchoReturnProcessor) Match(ast.Node) bool {
-	return true
+func (i *EchoReturnProcessor) Match(n ast.Node) bool {
+	retStmt, ok := n.(*ast.ReturnStmt)
+	if !ok {
+		return false
+	}
+	if len(retStmt.Results) != 1 {
+		return false
+	}
+	callExpr, ok := retStmt.Results[0].(*ast.CallExpr)
+	if !ok {
+		return false
+	}
+	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return false
+	}
+	obj, ok := i.typesInfo.Uses[selExpr.Sel]
+	if !ok {
+		return false
+	}
+	return obj.Type().String() == framework.ECHO_CONTEXT_TYPE
 }
