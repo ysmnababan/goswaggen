@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -32,11 +33,13 @@ func NewGenerator(p Parser) *generator {
 func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setSummary()
 	g.setDescription()
+	g.setTags()
+	g.setAccept()
 	return g.commentBlock
 }
 
 func (g *generator) setSummary() {
-	g.commentBlock.Summary = g.funcName
+	g.commentBlock.Summary = fmt.Sprintf("// @Summary  %s", g.funcName)
 }
 
 func camelCaseToTitle(input string) string {
@@ -62,5 +65,28 @@ func camelCaseToTitle(input string) string {
 }
 
 func (g *generator) setDescription() {
-	g.commentBlock.Description = camelCaseToTitle(g.funcName)
+	g.commentBlock.Description = fmt.Sprintf("// @Description %s", camelCaseToTitle(g.funcName))
+}
+
+func (g *generator) setTags() {
+	g.commentBlock.Tags = "// @Tags ______ "
+}
+
+func (g *generator) setAccept() {
+	if g.method == "GET" || g.method == "DELETE" {
+		return
+	}
+	acceptMap := make(map[string]bool)
+	for _, p := range g.payloads {
+		if tag := p.GetAcceptTag(); tag != "" {
+			acceptMap[tag] = true
+		}
+	}
+	tags := []string{}
+	for k := range acceptMap {
+		tags = append(tags, k)
+	}
+	if len(tags) > 0 {
+		g.commentBlock.Accept = fmt.Sprintf("// @Accept %s", strings.Join(tags, ","))
+	}
 }
