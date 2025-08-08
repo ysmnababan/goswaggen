@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 	"strings"
 
@@ -9,6 +10,10 @@ import (
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
+
+var DEFAULT_PARAM_DESCRIPTION = "change this description"
+var DEFAULT_QUERY_PARAM_DESCRIPTION = "change this description"
+var DEFAULT_BODY_DESCRIPTION = "change this description"
 
 type generator struct {
 	funcName      string
@@ -22,11 +27,15 @@ type generator struct {
 func NewGenerator(p Parser) *generator {
 	return &generator{
 		funcName:      p.GetFuncName(),
-		method:        p.GetMethod(),
+		method:        strings.ToUpper(p.GetMethod()),
 		frameworkName: p.GetFrameworkName(),
 		payloads:      p.GetPayloadInfos(),
 		responses:     p.ReturnResponses(),
-		commentBlock:  &model.CommentBlock{},
+		commentBlock: &model.CommentBlock{
+			Params:         []string{},
+			Produce:        []string{},
+			ResponseBlocks: []string{},
+		},
 	}
 }
 
@@ -35,6 +44,7 @@ func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setDescription()
 	g.setTags()
 	g.setAccept()
+	g.setParam()
 	return g.commentBlock
 }
 
@@ -89,4 +99,97 @@ func (g *generator) setAccept() {
 	if len(tags) > 0 {
 		g.commentBlock.Accept = fmt.Sprintf("// @Accept %s", strings.Join(tags, ","))
 	}
+}
+
+func (g *generator) setParam() {
+	existingParam := make(map[string]bool)
+	params := []*model.Param{}
+	for _, p := range g.payloads {
+		results := processPayload(p, g.method)
+		if len(results) == 0 {
+			continue
+		}
+		params = append(params, results...)
+	}
+	for _, p := range params {
+		comment := fmt.Sprintf("%s %s %s %v %s", p.Name, p.BindMethod, p.ParamType, p.IsRequired, p.Description)
+		if _, ok := existingParam[comment]; !ok {
+			existingParam[comment] = true
+			g.commentBlock.Params = append(g.commentBlock.Params, fmt.Sprintf("// @Param %s", comment))
+		}
+	}
+}
+
+func processPayload(i *model.PayloadInfo, method string) []*model.Param {
+	out := []*model.Param{}
+	switch i.BindMethod {
+	case "Bind":
+		if method == "GET" || method == "DELETE" {
+			for _, f := range i.FieldLists {
+				method, name := getPriorityTag(f.Tag)
+				isRequired := true
+				if !isRequiredFieldFromTag(f.Tag) && f.IsPointer {
+					isRequired = false
+				}
+				if method != "" && name != "" {
+					p := &model.Param{
+						Name:        name,
+						BindMethod:  method,
+						ParamType:   f.VarType,
+						Description: DEFAULT_PARAM_DESCRIPTION,
+						IsRequired:  isRequired,
+					}
+					out = append(out, p)
+				}
+			}
+		} else {
+			p := &model.Param{
+				Name:        i.BasicLit,
+				BindMethod:  "body",
+				ParamType:   i.ParamTypes,
+				IsRequired:  true,
+				Description: DEFAULT_BODY_DESCRIPTION,
+			}
+			out = append(out, p)
+		}
+	case "QueryParam":
+		p := &model.Param{
+			Name:        i.BasicLit,
+			BindMethod:  "query",
+			IsRequired:  true,
+			ParamType:   "string",
+			Description: DEFAULT_QUERY_PARAM_DESCRIPTION,
+		}
+		out = append(out, p)
+	case "Param":
+		p := &model.Param{
+			Name:        i.BasicLit,
+			BindMethod:  "path",
+			IsRequired:  true,
+			ParamType:   "string",
+			Description: DEFAULT_PARAM_DESCRIPTION,
+		}
+		out = append(out, p)
+	default:
+		log.Println("unknown bind method:", i.BindMethod)
+	}
+	return out
+}
+
+func getPriorityTag(tags map[string]string) (method string, name string) {
+	method = ""
+	name = ""
+	if n, ok := tags["param"]; ok {
+		name = n
+		method = "path"
+	}
+	if n, ok := tags["query"]; ok {
+		name = n
+		method = "query"
+	}
+	return
+}
+func isRequiredFieldFromTag(tags map[string]string) bool {
+	isvalid := tags["validate"]
+	return isvalid == "required"
 }
