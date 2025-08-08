@@ -110,3 +110,110 @@ func TestSetAccept(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessPayload(t *testing.T) {
+	qp := model.PayloadInfo{
+		BasicLit:   "name",
+		BindMethod: "QueryParam",
+	}
+	p := model.PayloadInfo{
+		BasicLit:   "id",
+		BindMethod: "Param",
+	}
+	body := model.PayloadInfo{
+		BindMethod: "Bind",
+		ParamTypes: "myPkg.MyStruct",
+		BasicLit:   "request",
+	}
+	tests := []struct {
+		name   string
+		method string
+		pi     model.PayloadInfo
+
+		wants []model.Param
+	}{
+		{
+			name:   "query post",
+			method: "POST",
+			pi:     qp,
+			wants: []model.Param{
+				{
+					Name:        "name",
+					BindMethod:  "query",
+					ParamType:   "string",
+					IsRequired:  true,
+					Description: DEFAULT_QUERY_PARAM_DESCRIPTION,
+				},
+			},
+		},
+		{
+			name:   "query get",
+			method: "GET",
+			pi:     qp,
+			wants: []model.Param{
+				{
+					Name:        "name",
+					BindMethod:  "query",
+					ParamType:   "string",
+					IsRequired:  true,
+					Description: DEFAULT_QUERY_PARAM_DESCRIPTION,
+				},
+			},
+		},
+		{
+			name:   "param put",
+			method: "PUT",
+			pi:     p,
+			wants: []model.Param{
+				{
+					Name:        "id",
+					BindMethod:  "path",
+					ParamType:   "string",
+					IsRequired:  true,
+					Description: DEFAULT_PARAM_DESCRIPTION,
+				},
+			},
+		},
+		{
+			name:   "param delete",
+			method: "DELETE",
+			pi:     p,
+			wants: []model.Param{
+				{
+					Name:        "id",
+					BindMethod:  "path",
+					ParamType:   "string",
+					IsRequired:  true,
+					Description: DEFAULT_PARAM_DESCRIPTION,
+				},
+			},
+		},
+		{
+			name:   "param post",
+			method: "POST",
+			pi:     body,
+			wants: []model.Param{
+				{
+					Name:        "request",
+					BindMethod:  "body",
+					ParamType:   "myPkg.MyStruct",
+					IsRequired:  true,
+					Description: DEFAULT_BODY_DESCRIPTION,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := processPayload(&tt.pi, tt.method)
+			for i, want := range tt.wants {
+				assert.Equal(t, want.Name, got[i].Name)
+				assert.Equal(t, want.BindMethod, got[i].BindMethod)
+				assert.Equal(t, want.ParamType, got[i].ParamType)
+				assert.Equal(t, want.IsRequired, got[i].IsRequired)
+				assert.Equal(t, want.Description, got[i].Description)
+			}
+		})
+	}
+}
