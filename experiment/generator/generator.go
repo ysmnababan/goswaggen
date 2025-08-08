@@ -11,10 +11,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-var DEFAULT_PARAM_DESCRIPTION = "change this description"
-var DEFAULT_QUERY_PARAM_DESCRIPTION = "change this description"
-var DEFAULT_BODY_DESCRIPTION = "change this description"
-
 type generator struct {
 	funcName      string
 	method        string
@@ -32,9 +28,9 @@ func NewGenerator(p Parser) *generator {
 		payloads:      p.GetPayloadInfos(),
 		responses:     p.ReturnResponses(),
 		commentBlock: &model.CommentBlock{
-			Params:         []string{},
-			Produce:        []string{},
-			ResponseBlocks: []string{},
+			Params:   []string{},
+			Produce:  []string{},
+			Response: []string{},
 		},
 	}
 }
@@ -45,6 +41,7 @@ func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setTags()
 	g.setAccept()
 	g.setParam()
+	g.setResponse()
 	return g.commentBlock
 }
 
@@ -189,7 +186,74 @@ func getPriorityTag(tags map[string]string) (method string, name string) {
 	}
 	return
 }
+
 func isRequiredFieldFromTag(tags map[string]string) bool {
 	isvalid := tags["validate"]
 	return isvalid == "required"
+}
+
+func processResponse(r *model.ReturnResponse) string {
+	prefix := "Failure"
+	desc := DEFAULT_FAILURE_RESPONSE_DESCRIPTION
+	if r.IsSuccess {
+		prefix = "Success"
+		desc = DEFAULT_SUCCESS_RESPONSE_DESCRIPTION
+	}
+	schemeType, ok := GO_TO_SWAGGO_SCHEME_TYPES_MAP[strings.ToLower(r.AcceptType)]
+	if !ok {
+		schemeType = DEFAULT_RESPONSE_SCHEME_TYPE
+	}
+
+	out := fmt.Sprintf(RESPONSE_BLOCK_TEMPLATE,
+		prefix,
+		r.StatusCode,
+		schemeType,
+		r.StructType,
+		desc,
+	)
+	return out
+}
+
+func (g *generator) setResponse() {
+	existingResp := make(map[string]bool)
+
+	// the response block at least has these response,
+	// if not exist, add default resp
+	defaultResp := map[string]bool{
+		"@Success 200": false,
+		"@Failure 400": false,
+		"@Failure 404": false,
+		"@Failure 500": false,
+	}
+
+	for _, r := range g.responses {
+		result := processResponse(r)
+		_, ok := existingResp[result]
+		if ok {
+			// handle duplicate
+			continue
+		}
+		for k := range defaultResp {
+			if strings.Contains(result, k) {
+				defaultResp[k] = true
+			}
+		}
+		g.commentBlock.Response = append(g.commentBlock.Response, result)
+	}
+
+	// TODO: Update default value by config
+	defaultSuccess := " {object} default.Success"
+	defaultFailure := " {object} default.Failure"
+
+	// add default resp if not exist
+	for k, val := range defaultResp {
+		if val {
+			continue
+		}
+		if strings.Contains(k, "200") {
+			g.commentBlock.Response = append(g.commentBlock.Response, k+defaultSuccess)
+		} else {
+			g.commentBlock.Response = append(g.commentBlock.Response, k+defaultFailure)
+		}
+	}
 }
