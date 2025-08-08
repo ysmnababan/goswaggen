@@ -31,6 +31,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Check the `@Produce` type for each `echo` response from documentation
 - [X] Create unit test for the parser
 - [X] Refactor 
+- [ ] `Bind` must support the `array` types
 
 DEVELOPMENT STAGE: Generating Comment
 - [ ] Look up what param need to cover
@@ -41,6 +42,11 @@ DEVELOPMENT STAGE: Generating Comment
 DEVELOPMENT STAGE: Rewriting the Comment
 - [ ] Learn how to insert comment to existing file
 
+TOOLING: reading the from cli
+- [ ] Add function to list all the function
+- [ ] Notify user if it duplicate handler function
+- [ ] Add function to generate template `config` file
+
 
 GENERAL:
 - [ ] Add unit test for each function
@@ -48,4 +54,4 @@ GENERAL:
 
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
-- [ ]
+- [ ] Add `Security` for comment block using the config file
