@@ -45,3 +45,7 @@ DEVELOPMENT STAGE: Rewriting the Comment
 GENERAL:
 - [ ] Add unit test for each function
 - [ ] Adding command line capability
+
+IMPROVEMENT:
+- [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
+- [ ]
