@@ -34,7 +34,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [ ] `Bind` must support the `array` types
 
 DEVELOPMENT STAGE: Generating Comment
-- [ ] Look up what param need to cover
+- [] Look up what param need to cover
 - [ ] Learn how to update the comment without changing important field
 
 
