@@ -15,6 +15,7 @@ type generator struct {
 	funcName      string
 	method        string
 	frameworkName string
+	path          string
 	payloads      []*model.PayloadInfo
 	responses     []*model.ReturnResponse
 	commentBlock  *model.CommentBlock
@@ -25,6 +26,7 @@ func NewGenerator(p Parser) *generator {
 		funcName:      p.GetFuncName(),
 		method:        strings.ToUpper(p.GetMethod()),
 		frameworkName: p.GetFrameworkName(),
+		path:          p.GetFullPath(),
 		payloads:      p.GetPayloadInfos(),
 		responses:     p.ReturnResponses(),
 		commentBlock: &model.CommentBlock{
@@ -42,6 +44,7 @@ func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setParam()
 	g.setResponse()
 	g.setProduceType()
+	g.setPath()
 	return g.commentBlock
 }
 
@@ -271,4 +274,23 @@ func (g *generator) setProduceType() {
 	if len(accepts) != 0 {
 		g.commentBlock.Produce = strings.Join(accepts, ",")
 	}
+}
+
+func (g *generator) setPath() {
+	if len(g.path) == 0 {
+		return
+	}
+	path := []string{}
+	splitted := strings.SplitSeq(g.path, "/")
+	for val := range splitted {
+		r := []rune(val)
+		if r[0] == ':' {
+			r[0] = '{'
+			r = append(r, '}')
+			path = append(path, string(r))
+		} else {
+			path = append(path, val)
+		}
+	}
+	g.path = strings.Join(path, "")
 }
