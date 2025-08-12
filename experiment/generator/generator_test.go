@@ -601,3 +601,68 @@ func TestSetAcceptType(t *testing.T) {
 		})
 	}
 }
+
+func TestSetPath(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "empty string",
+			path: "",
+			want: "",
+		},
+		{
+			name: "no param inside path",
+			path: "/auth/login",
+			want: "/auth/login",
+		},
+		{
+			name: "1 param in the middle",
+			path: "/user/:id/bank-info",
+			want: "/user/{id}/bank-info",
+		},
+		{
+			name: "1 param at the end",
+			path: "/users/:id",
+			want: "/users/{id}",
+		},
+		{
+			name: "2 params",
+			path: "/users/:id/orders/:order-id",
+			want: "/users/{id}/orders/{order-id}",
+		},
+		{
+			name: "no param inside path, no trailing /",
+			path: "auth/login",
+			want: "auth/login",
+		},
+		{
+			name: "1 param in the middle, no trailing /",
+			path: "user/:id/bank-info",
+			want: "user/{id}/bank-info",
+		},
+		{
+			name: "1 param at the end, no trailing /",
+			path: "users/:id",
+			want: "users/{id}",
+		},
+		{
+			name: "2 params, no trailing /",
+			path: "users/:id/orders/:order-id",
+			want: "users/{id}/orders/{order-id}",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := generator{
+				path:         tt.path,
+				commentBlock: &model.CommentBlock{},
+			}
+			g.setPath()
+			assert.Equal(t, tt.want, g.commentBlock.Router)
+		})
+	}
+}

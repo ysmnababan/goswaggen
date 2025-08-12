@@ -280,8 +280,13 @@ func (g *generator) setPath() {
 	if len(g.path) == 0 {
 		return
 	}
+	in := g.path
 	path := []string{}
-	splitted := strings.SplitSeq(g.path, "/")
+	if runes := []rune(g.path); runes[0] == '/' {
+		in = string(runes[1:])
+	}
+
+	splitted := strings.SplitSeq(in, "/")
 	for val := range splitted {
 		r := []rune(val)
 		if r[0] == ':' {
@@ -292,5 +297,9 @@ func (g *generator) setPath() {
 			path = append(path, val)
 		}
 	}
-	g.path = strings.Join(path, "")
+	if runes := []rune(g.path); runes[0] == '/' {
+		g.commentBlock.Router = "/" + strings.Join(path, "/")
+	} else {
+		g.commentBlock.Router = strings.Join(path, "/")
+	}
 }
