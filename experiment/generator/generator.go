@@ -29,7 +29,6 @@ func NewGenerator(p Parser) *generator {
 		responses:     p.ReturnResponses(),
 		commentBlock: &model.CommentBlock{
 			Params:   []string{},
-			Produce:  []string{},
 			Response: []string{},
 		},
 	}
@@ -42,6 +41,7 @@ func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setAccept()
 	g.setParam()
 	g.setResponse()
+	g.setProduceType()
 	return g.commentBlock
 }
 
@@ -258,7 +258,7 @@ func (g *generator) setResponse() {
 	}
 }
 
-func (g *generator) setAcceptType() {
+func (g *generator) setProduceType() {
 	isExist := make(map[string]bool)
 	accepts := []string{}
 
@@ -269,6 +269,6 @@ func (g *generator) setAcceptType() {
 		}
 	}
 	if len(accepts) != 0 {
-		g.commentBlock.Accept = strings.Join(accepts, ",")
+		g.commentBlock.Produce = strings.Join(accepts, ",")
 	}
 }

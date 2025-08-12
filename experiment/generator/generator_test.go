@@ -551,3 +551,53 @@ func TestProcessResponse(t *testing.T) {
 		})
 	}
 }
+
+func TestSetAcceptType(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []*model.ReturnResponse
+		want string
+	}{
+		{
+			name: "produce only json",
+			in: []*model.ReturnResponse{
+				{
+					AcceptType: "json",
+				},
+			},
+			want: "json",
+		},
+		{
+			name: "produce empty",
+			in:   []*model.ReturnResponse{},
+			want: "",
+		},
+		{
+			name: "produce json and xml",
+			in: []*model.ReturnResponse{
+				{
+					AcceptType: "json",
+				},
+				{
+					AcceptType: "json",
+				},
+				{
+					AcceptType: "xml",
+				},
+			},
+			want: "json,xml",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &generator{
+				responses:    tt.in,
+				commentBlock: &model.CommentBlock{},
+			}
+			g.setProduceType()
+			got := g.commentBlock.Produce
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
