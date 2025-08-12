@@ -495,3 +495,59 @@ func TestProcessPayload_WhenUsingBind(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessResponse(t *testing.T) {
+	tests := []struct {
+		name string
+		in   *model.ReturnResponse
+
+		want string
+	}{
+		{
+			name: "success json",
+			in: &model.ReturnResponse{
+				IsSuccess:  true,
+				AcceptType: "json",
+				StatusCode: 200,
+				StructType: "myPkg.MyStruct",
+			},
+			want: "@Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+		},
+		{
+			name: "success string",
+			in: &model.ReturnResponse{
+				IsSuccess:  true,
+				AcceptType: "string",
+				StatusCode: 200,
+				StructType: "myPkg.MyStruct",
+			},
+			want: "@Success 200 {string} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+		},
+		{
+			name: "success struct",
+			in: &model.ReturnResponse{
+				IsSuccess:  true,
+				AcceptType: "struct",
+				StatusCode: 200,
+				StructType: "myPkg.MyStruct",
+			},
+			want: "@Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+		},
+		{
+			name: "failure float",
+			in: &model.ReturnResponse{
+				IsSuccess:  false,
+				AcceptType: "float32",
+				StatusCode: 400,
+				StructType: "myPkg.MyStruct",
+			},
+			want: "@Failure 400 {number} myPkg.MyStruct " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, processResponse(tt.in))
+		})
+	}
+}
