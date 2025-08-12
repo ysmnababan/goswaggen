@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -511,7 +512,7 @@ func TestProcessResponse(t *testing.T) {
 				StatusCode: 200,
 				StructType: "myPkg.MyStruct",
 			},
-			want: "@Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+			want: "// @Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "success string",
@@ -521,7 +522,7 @@ func TestProcessResponse(t *testing.T) {
 				StatusCode: 200,
 				StructType: "myPkg.MyStruct",
 			},
-			want: "@Success 200 {string} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+			want: "// @Success 200 {string} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "success struct",
@@ -531,7 +532,7 @@ func TestProcessResponse(t *testing.T) {
 				StatusCode: 200,
 				StructType: "myPkg.MyStruct",
 			},
-			want: "@Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+			want: "// @Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "failure float",
@@ -541,7 +542,7 @@ func TestProcessResponse(t *testing.T) {
 				StatusCode: 400,
 				StructType: "myPkg.MyStruct",
 			},
-			want: "@Failure 400 {number} myPkg.MyStruct " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
+			want: "// @Failure 400 {number} myPkg.MyStruct " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
 		},
 	}
 
@@ -565,7 +566,7 @@ func TestSetAcceptType(t *testing.T) {
 					AcceptType: "json",
 				},
 			},
-			want: "json",
+			want: "// @Produce json",
 		},
 		{
 			name: "produce empty",
@@ -585,7 +586,7 @@ func TestSetAcceptType(t *testing.T) {
 					AcceptType: "xml",
 				},
 			},
-			want: "json,xml",
+			want: "// @Produce json,xml",
 		},
 	}
 
@@ -611,7 +612,7 @@ func TestSetPath(t *testing.T) {
 		{
 			name: "empty string",
 			path: "",
-			want: "",
+			want: "___",
 		},
 		{
 			name: "no param inside path",
@@ -660,9 +661,13 @@ func TestSetPath(t *testing.T) {
 			g := generator{
 				path:         tt.path,
 				commentBlock: &model.CommentBlock{},
+				method:       "post",
 			}
 			g.setPath()
-			assert.Equal(t, tt.want, g.commentBlock.Router)
+			router := g.commentBlock.Router
+			want := fmt.Sprintf(ROUTER_TEMPLATE, tt.want, g.method)
+			// assert.Contains(t, g.commentBlock.Router, tt.want)
+			assert.Equal(t, want, router)
 		})
 	}
 }

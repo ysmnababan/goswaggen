@@ -272,14 +272,16 @@ func (g *generator) setProduceType() {
 		}
 	}
 	if len(accepts) != 0 {
-		g.commentBlock.Produce = strings.Join(accepts, ",")
+		g.commentBlock.Produce = fmt.Sprintf(PRODUCE_TEMPLATE, strings.Join(accepts, ","))
 	}
 }
 
 func (g *generator) setPath() {
 	if len(g.path) == 0 {
+		g.commentBlock.Router = fmt.Sprintf(ROUTER_TEMPLATE, "___", strings.ToLower(g.method))
 		return
 	}
+
 	in := g.path
 	path := []string{}
 	if runes := []rune(g.path); runes[0] == '/' {
@@ -297,9 +299,32 @@ func (g *generator) setPath() {
 			path = append(path, val)
 		}
 	}
+	fullpath := ""
 	if runes := []rune(g.path); runes[0] == '/' {
-		g.commentBlock.Router = "/" + strings.Join(path, "/")
-	} else {
-		g.commentBlock.Router = strings.Join(path, "/")
+		fullpath += "/"
 	}
+	fullpath += strings.Join(path, "/")
+	g.commentBlock.Router = fmt.Sprintf(ROUTER_TEMPLATE,
+		fullpath,
+		strings.ToLower(g.method))
+}
+
+func (g *generator) PrintCommmentBlock() {
+	cb := g.commentBlock
+	fmt.Println(cb.Summary)
+	fmt.Println(cb.Description)
+	fmt.Println(cb.Tags)
+	if len(cb.Accept) != 0 {
+		fmt.Println(cb.Accept)
+	}
+	if len(cb.Produce) != 0 {
+		fmt.Println(cb.Produce)
+	}
+	for _, p := range cb.Params {
+		fmt.Println(p)
+	}
+	for _, r := range cb.Response {
+		fmt.Println(r)
+	}
+	fmt.Println(cb.Router)
 }
