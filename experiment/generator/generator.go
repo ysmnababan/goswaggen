@@ -257,3 +257,18 @@ func (g *generator) setResponse() {
 		}
 	}
 }
+
+func (g *generator) setAcceptType() {
+	isExist := make(map[string]bool)
+	accepts := []string{}
+
+	for _, r := range g.responses {
+		if ok := isExist[r.AcceptType]; !ok {
+			isExist[r.AcceptType] = true
+			accepts = append(accepts, r.AcceptType)
+		}
+	}
+	if len(accepts) != 0 {
+		g.commentBlock.Accept = strings.Join(accepts, ",")
+	}
+}
