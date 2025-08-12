@@ -671,3 +671,33 @@ func TestSetPath(t *testing.T) {
 		})
 	}
 }
+
+func TestPrintCommentBlock(t *testing.T) {
+	g := generator{
+		funcName: "Login",
+		method:   "POST",
+		path:     "/users/:id/data/:data-id",
+		payloads: []*model.PayloadInfo{
+			{
+				BasicLit:   "id",
+				BindMethod: "Param",
+			},
+			{
+				BasicLit:   "data-id",
+				BindMethod: "Param",
+			},
+		},
+		responses: []*model.ReturnResponse{
+			{
+				StructType: "myPkg.LoginResponse",
+				StatusCode: 200,
+				IsSuccess:  true,
+				AcceptType: "json",
+			},
+		},
+		commentBlock: &model.CommentBlock{},
+	}
+	cb := g.CreateCommentBlock()
+	assert.NotNil(t, cb)
+	g.PrintCommmentBlock()
+}

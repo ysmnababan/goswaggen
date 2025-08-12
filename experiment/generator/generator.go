@@ -223,10 +223,10 @@ func (g *generator) setResponse() {
 	// the response block at least has these response,
 	// if not exist, add default resp
 	defaultResp := map[string]bool{
-		"@Success 200": false,
-		"@Failure 400": false,
-		"@Failure 404": false,
-		"@Failure 500": false,
+		"// @Success 200": false,
+		"// @Failure 400": false,
+		"// @Failure 404": false,
+		"// @Failure 500": false,
 	}
 
 	for _, r := range g.responses {
