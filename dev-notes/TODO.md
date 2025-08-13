@@ -34,7 +34,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [ ] `Bind` must support the `array` types
 
 DEVELOPMENT STAGE: Generating Comment
-- [] Look up what param need to cover
+- [X] Look up what param need to cover
 - [ ] Learn how to update the comment without changing important field
 
 
@@ -43,10 +43,11 @@ DEVELOPMENT STAGE: Rewriting the Comment
 - [ ] Learn how to insert comment to existing file
 
 TOOLING: reading the from cli
+- [ ] Explore how to build golang cli tools
 - [ ] Add function to list all the function
 - [ ] Notify user if it duplicate handler function
 - [ ] Add function to generate template `config` file
-
+- [ ] Read config file
 
 GENERAL:
 - [ ] Add unit test for each function
@@ -55,3 +56,4 @@ GENERAL:
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
 - [ ] Add `Security` for comment block using the config file
+- [ ] Add security when releasing the artifacts (checksum and gpg)
