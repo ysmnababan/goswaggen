@@ -11,6 +11,7 @@ var listCmd = &cobra.Command{
 	Aliases: []string{"l"},
 	Short:   "controller lists",
 	Long:    "list all the controller grouped by its package",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")
 		c := GetAllControllers()

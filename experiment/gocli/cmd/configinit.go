@@ -11,7 +11,8 @@ var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
 	Short:   "init config file",
-	Long:    "Initialize a config file for costumization",
+	Long:    "Initialize a config file for customization",
+	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := InitConfig()
 		if err != nil {
