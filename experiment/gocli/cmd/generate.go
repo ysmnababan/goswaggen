@@ -9,7 +9,7 @@ import (
 
 var shouldForce bool
 var generateCmd = &cobra.Command{
-	Use:     "generate",
+	Use:     "generate [handler to annotate]",
 	Aliases: []string{"g", "gen"},
 	Short:   "Generate Swagger comment block",
 	Long:    "Generate Swagger comment block",
