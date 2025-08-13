@@ -43,15 +43,15 @@ DEVELOPMENT STAGE: Rewriting the Comment
 - [ ] Learn how to insert comment to existing file
 
 TOOLING: reading the from cli
-- [ ] Explore how to build golang cli tools
-- [ ] Add function to list all the function
+- [X] Explore how to build golang cli tools
+- [X] Add function to list all the function
 - [ ] Notify user if it duplicate handler function
 - [ ] Add function to generate template `config` file
 - [ ] Read config file
 
 GENERAL:
 - [ ] Add unit test for each function
-- [ ] Adding command line capability
+- [X] Adding command line capability
 
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
