@@ -9,6 +9,9 @@ import (
 	"io"
 )
 
+// https://eli.thegreenplace.net/2021/rewriting-go-source-code-with-ast-tooling/
+// https://www.zakariaamine.com/2022-09-22/ast-package-generate-function-comments/
+
 type injector struct {
 	file    *ast.File
 	fset    *token.FileSet
@@ -36,6 +39,8 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 			List: astComments,
 		}
 		i.file.Comments = append(i.file.Comments, newCommentGroup)
+		// TODO : learn this tomorrow
+		i.fset.File(newCommentGroup.End()).AddLine(int(newCommentGroup.End()))
 	} else {
 		commentGroups[0].List = astComments
 	}
