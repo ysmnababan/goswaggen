@@ -63,5 +63,57 @@ func printSelf() {
 }
 
 func main() {
-	printSelf()
+	// printSelf()
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "target.go", nil, parser.ParseComments)
+	if err != nil {
+		log.Fatal(err)
+	}
+	commentMap := ast.NewCommentMap(fset, file, file.Comments)
+	ast.Inspect(file, func(n ast.Node) bool {
+		switch n.(type) {
+		case *ast.FuncDecl:
+			cmaps := commentMap[n]
+			if len(cmaps) == 0 {
+				fmt.Println("no comment found", cmaps == nil)
+				newCg := []*ast.CommentGroup{
+					{
+						List: []*ast.Comment{
+							{
+								Text:  "// newComment",
+								Slash: token.Pos(n.Pos() - 2),
+							},
+							{
+								Text:  "// secondComment",
+								Slash: token.Pos(n.Pos() - 1),
+							},
+						},
+					},
+				}
+				commentMap[n] = newCg
+				fmt.Println(newCg[0].List[0].Slash)
+				file.Comments = append(file.Comments, newCg[0])
+				return true
+			}
+			for _, cg := range cmaps {
+				fmt.Println(cg.Text())
+				fmt.Println(len(cg.List))
+			}
+			cmap := cmaps[0]
+			h := cmap.List[1]
+			h.Text = "// really?"
+			newCmt := []*ast.Comment{cmap.List[1]}
+			cmaps[0].List = newCmt
+		}
+		return true
+	})
+
+	srcFile, err := os.Create("target.go")
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = format.Node(srcFile, fset, file)
+	if err != nil {
+		panic(err)
+	}
 }
