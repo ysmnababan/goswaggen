@@ -31,6 +31,7 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Check the `@Produce` type for each `echo` response from documentation
 - [X] Create unit test for the parser
 - [X] Refactor 
+- [X] Paired the function declaration with the comment block
 - [ ] `Bind` must support the `array` types
 
 DEVELOPMENT STAGE: Generating Comment
