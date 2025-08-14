@@ -2,13 +2,13 @@ package main
 
 import "fmt"
 
-// seriusan?
-// hello
 type data struct {
 }
 
-// newComment
-// secondComment
+// first
+// second
+// third
+// fourth
 func SomeFunc() {
 	fmt.Println("this is a function")
 }

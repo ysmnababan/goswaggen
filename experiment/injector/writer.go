@@ -62,12 +62,15 @@ func printSelf() {
 	}
 }
 
-func main() {
+func insertComment() {
 	// printSelf()
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "target.go", nil, parser.ParseComments)
 	if err != nil {
 		log.Fatal(err)
+	}
+	for i, val := range file.Comments {
+		fmt.Println(i, val.Text())
 	}
 	commentMap := ast.NewCommentMap(fset, file, file.Comments)
 	ast.Inspect(file, func(n ast.Node) bool {
@@ -115,5 +118,35 @@ func main() {
 	err = format.Node(srcFile, fset, file)
 	if err != nil {
 		panic(err)
+	}
+}
+
+func main() {
+	fset := token.NewFileSet()
+	file, err := parser.ParseFile(fset, "target.go", nil, parser.ParseComments)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var fun *ast.FuncDecl
+	ast.Inspect(file, func(n ast.Node) bool {
+		if f, ok := n.(*ast.FuncDecl); ok {
+			if f.Name.Name == "SomeFunc" {
+				fun = f
+				return false
+			}
+		}
+		return true
+	})
+	injector := NewInjector(fset, file, fun)
+	newCmt := []string{
+		"// first",
+		"// second",
+		"// third",
+		"// fourth",
+	}
+	srcFile, _ := os.Create("target.go")
+	err = injector.InjectComment(newCmt, srcFile)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
