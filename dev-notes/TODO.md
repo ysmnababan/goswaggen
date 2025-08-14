@@ -41,7 +41,9 @@ DEVELOPMENT STAGE: Generating Comment
 
 
 DEVELOPMENT STAGE: Rewriting the Comment
-- [ ] Learn how to insert comment to existing file
+- [X] Learn how to insert comment to existing file
+- [ ] Insert comment by pushing the file below
+- [ ] Make sure comment doesn't reach the first line
 
 TOOLING: reading the from cli
 - [X] Explore how to build golang cli tools
