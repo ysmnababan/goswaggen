@@ -31,9 +31,15 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 	}
 	astComments := createASTComment(comments, i.funcAst.Pos())
 	if i.funcAst.Doc == nil {
-		// no comment above function, create new
+		// insert new comment
+
+		blank := &ast.Comment{
+			Text:  "//",
+			Slash: token.Pos(i.funcAst.Pos() - 1),
+		}
+		newList := append([]*ast.Comment{blank}, astComments...)
 		newCommentGroup := &ast.CommentGroup{
-			List: astComments,
+			List: newList,
 		}
 		i.file.Comments = append(i.file.Comments, newCommentGroup)
 	} else {
