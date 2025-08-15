@@ -25,24 +25,19 @@ func NewInjector(fset *token.FileSet, f *ast.File, fun *ast.FuncDecl) *injector 
 		funcAst: fun,
 	}
 }
-
 func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 	if len(comments) == 0 {
 		return errors.New("comments can't be empty")
 	}
-	cmaps := ast.NewCommentMap(i.fset, i.funcAst, i.file.Comments)
-	commentGroups, ok := cmaps[i.funcAst]
 	astComments := createASTComment(comments, i.funcAst.Pos())
-	if !ok {
+	if i.funcAst.Doc == nil {
 		// no comment above function, create new
 		newCommentGroup := &ast.CommentGroup{
 			List: astComments,
 		}
 		i.file.Comments = append(i.file.Comments, newCommentGroup)
-		// TODO : learn this tomorrow
-		i.fset.File(newCommentGroup.End()).AddLine(int(newCommentGroup.End()))
 	} else {
-		commentGroups[0].List = astComments
+		i.funcAst.Doc.List = astComments
 	}
 
 	err := format.Node(srcFile, i.fset, i.file)
@@ -54,12 +49,14 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 
 func createASTComment(comments []string, pos token.Pos) []*ast.Comment {
 	List := []*ast.Comment{}
-	maxLen := len(comments)
-	for i, c := range comments {
-		newPos := maxLen - i
+	for _, c := range comments {
 		astComment := &ast.Comment{
-			Text:  c,
-			Slash: token.Pos(pos - token.Pos(newPos)),
+			Text: c,
+
+			// make sure the comment pos is positioned before the func `Pos()`.
+			// As long as the placement is in between the previous node
+			// and the func, it will placed properly
+			Slash: token.Pos(pos - 1),
 		}
 		List = append(List, astComment)
 	}
