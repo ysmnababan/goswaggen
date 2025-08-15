@@ -42,8 +42,8 @@ DEVELOPMENT STAGE: Generating Comment
 
 DEVELOPMENT STAGE: Rewriting the Comment
 - [X] Learn how to insert comment to existing file
-- [ ] Insert comment by pushing the file below
-- [ ] Make sure comment doesn't reach the first line
+- [X] Insert comment by pushing the file below
+- [X] Make sure comment doesn't reach the first line
 
 TOOLING: reading the from cli
 - [X] Explore how to build golang cli tools
@@ -53,8 +53,9 @@ TOOLING: reading the from cli
 - [ ] Read config file
 
 GENERAL:
-- [ ] Add unit test for each function
 - [X] Adding command line capability
+- [ ] Assembly each part
+- [ ] Add unit test for each function
 
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
