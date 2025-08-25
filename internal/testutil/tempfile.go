@@ -32,6 +32,13 @@ func NewTemporaryTestFile(tmp string) (*temporaryTestFile, error) {
 	}, nil
 }
 
+func (t *temporaryTestFile) GetTempFile() string {
+	return t.tempFile
+}
+
+func (t *temporaryTestFile) GetFileSet() *token.FileSet {
+	return t.fset
+}
 func (t *temporaryTestFile) AddNewFile(filename, code string) error {
 	return os.WriteFile(filepath.Join(t.tempFile, filename), []byte(code), 0644)
 }
