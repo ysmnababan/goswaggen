@@ -36,6 +36,15 @@ func (t *temporaryTestFile) AddNewFile(filename, code string) error {
 	return os.WriteFile(filepath.Join(t.tempFile, filename), []byte(code), 0644)
 }
 
+func (t *temporaryTestFile) AddNewFileInPackage(packageName, filename, code string) error {
+	libDir := filepath.Join(t.tempFile, packageName)
+	err := os.Mkdir(libDir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create new folder %w", err)
+	}
+	return os.WriteFile(filepath.Join(libDir, filename), []byte(code), 0644)
+}
+
 func (t *temporaryTestFile) BuildPackages() ([]*packages.Package, error) {
 	// run `go mod tidy`
 	cmd := exec.Command("go", "mod", "tidy")
