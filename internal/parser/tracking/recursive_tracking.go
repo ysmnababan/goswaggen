@@ -143,6 +143,9 @@ func getRouterTypePrefix(ctx *context.RegistrationContext) (bool, string) {
 			}
 		case *ast.CallExpr:
 			if sel, ok := n.Fun.(*ast.SelectorExpr); ok {
+				if sel.Sel.Name != "Group" {
+					continue
+				}
 				ident, ok := sel.X.(*ast.Ident)
 				if !ok {
 					continue
@@ -272,7 +275,6 @@ func FindHandlerRegistration(ctx *context.RegistrationContext) []*HandlerRegistr
 						result = append(result, handlerReg)
 						continue
 					}
-
 					// when the expression is not direct handler registration
 					// have to traverse inside the FuncDecl again.
 					// before that, save the currentFunc to be used when the
