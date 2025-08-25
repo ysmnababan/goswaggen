@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/ysmnababan/goswaggen/internal/generator"
 	"github.com/ysmnababan/goswaggen/internal/parser"
 )
 
@@ -16,18 +17,25 @@ var generateCmd = &cobra.Command{
 	Long:    "Generate Swagger comment block",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		parser, err := parser.NewParser(args[0])
+		root := ""
+		targetFunc := args[0]
+		parser, err := parser.NewParser(root)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)
 		}
-		var handler IHandler
-		handler, err = parser.ExtractFuncHandlerInfo(args[0])
+		handlerReg, err := parser.ExtractFuncHandlerInfo(targetFunc)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "%v\n", err)
 			os.Exit(1)
 		}
-		_ = handler
+
+		gen := generator.NewGenerator(handlerReg)
+		if shouldForce {
+			
+		} else {
+			gen.PrintCommmentBlock()
+		}
 	},
 }
 

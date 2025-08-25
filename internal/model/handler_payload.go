@@ -17,3 +17,13 @@ type PayloadInfo struct {
 	// Depends on the BindMethod and HTTP method
 	FieldLists []*StructField
 }
+
+func (i *PayloadInfo) GetAcceptTag() string {
+	if i.BindMethod != "Bind" {
+		return ""
+	}
+	// Default value is `json`
+	// The `accept` tag depends on the Content-Type of the request.
+	// So it is not possible to know the exact Content-Type.
+	return "json"
+}
