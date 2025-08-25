@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"go/token"
 	"os"
 	"os/exec"
@@ -91,6 +92,7 @@ func TestSearchDeclFun_MainExist(t *testing.T) {
 }
 
 func TestSearchDeclFun_MainNotExist(t *testing.T) {
+	t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
@@ -134,4 +136,68 @@ func TestSearchDeclFun_MainNotExist(t *testing.T) {
 	assert.Nil(t, mainFuncDecl)
 	assert.Equal(t, 1, len(pkgs))
 	assert.Equal(t, 2, tmp.FileCount())
+}
+
+func TestGetAllHandlers(t *testing.T) {
+	t.Parallel()
+	var err error
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/one", HandlerOne)
+		e.GET("/two", HandlerTwo)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func HandlerOne(c echo.Context) error{
+		return nil 
+	}
+
+	func HandlerTwo(c echo.Context) error{
+		return nil 
+	}
+	`
+
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	mainFuncDecl, _ := searchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	require.NotNil(t, mainFuncDecl)
+	require.Equal(t, "main", mainFuncDecl.Name.Name)
+	parser := &parser{
+		fset:         tmp.GetFileSet(),
+		root:         tmp.GetTempFile(),
+		pkgs:         pkgs,
+		mainFuncDecl: mainFuncDecl,
+	}
+
+	// execute
+	handlers := parser.GetAllHandlers()
+	fmt.Println(handlers)
+	// assert
+	assert.Equal(t, 1, len(pkgs))
+	assert.Equal(t, 1, tmp.FileCount())
+	assert.Equal(t, 2, len(handlers))
+	assert.ElementsMatch(t,
+		[]string{
+			"main.HandlerOne",
+			"main.HandlerTwo",
+		},
+		handlers,
+	)
 }

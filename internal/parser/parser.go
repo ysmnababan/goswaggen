@@ -2,8 +2,8 @@ package parser
 
 import (
 	"fmt"
+	"go/ast"
 	"go/token"
-	"log"
 
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/tracking"
@@ -13,8 +13,19 @@ import (
 var FSET *token.FileSet
 var MAIN_PACKAGE_NAME = "main"
 
-func ParseHandler(dir string) {
-	FSET = token.NewFileSet()
+type parser struct {
+	fset         *token.FileSet
+	root         string
+	pkgs         []*packages.Package
+	mainFuncDecl *ast.FuncDecl
+}
+
+func NewParser(root string) (*parser, error) {
+	if root == "" {
+		return nil, fmt.Errorf("root can't be empty")
+	}
+
+	fset := token.NewFileSet()
 	cfg := &packages.Config{
 		Mode: packages.NeedName |
 			packages.NeedFiles |
@@ -24,28 +35,39 @@ func ParseHandler(dir string) {
 			packages.NeedTypes |
 			packages.NeedSyntax |
 			packages.NeedTypesInfo,
-		Dir:  dir, // relative to where you run `go run`
-		Fset: FSET,
+		Dir:  root, // relative to where you run `go run`
+		Fset: fset,
 	}
 
 	pkgs, err := packages.Load(cfg, "./...") // load add the package
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error loading packages: %w", err)
 	}
 	if len(pkgs) == 0 {
-		log.Println("no package found")
-		return
+		return nil, fmt.Errorf("no package found")
 	}
 	mainFuncDecl, _ := searchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
 	if mainFuncDecl == nil {
-		log.Println("no main file found")
-		return
+		return nil, fmt.Errorf("no main file found")
 	}
+	return &parser{
+		fset:         fset,
+		root:         root,
+		pkgs:         pkgs,
+		mainFuncDecl: mainFuncDecl,
+	}, nil
+}
 
-	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
+func (p *parser) GetAllHandlers() []string {
+	ctx := context.NewRegistrationContext(p.pkgs, p.mainFuncDecl)
 	handlerRegs := tracking.FindHandlerRegistration(ctx)
 	if len(handlerRegs) == 0 {
-		fmt.Println("can't find handler registration")
-		return
+		return nil
 	}
+	out := make([]string, 0, len(handlerRegs))
+
+	for _, h := range handlerRegs {
+		out = append(out, h.GetFuncNameWithPackage())
+	}
+	return out
 }
