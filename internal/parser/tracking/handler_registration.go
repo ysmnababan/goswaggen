@@ -46,6 +46,10 @@ func (n *HandlerRegistration) GetFuncName() string {
 	return n.Func.Name()
 }
 
+func (n *HandlerRegistration) GetFuncNameWithPackage() string {
+	return fmt.Sprintf("%s.%s", n.Pkg.Name, n.Func.Name())
+}
+
 func (n *HandlerRegistration) GetMethod() string {
 	method := n.Call.Fun.(*ast.SelectorExpr)
 	return method.Sel.Name
