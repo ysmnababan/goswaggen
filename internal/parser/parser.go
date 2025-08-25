@@ -134,7 +134,6 @@ func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration
 		ExistingVarMap:     make(map[*types.Var]bool),
 		ResolvedAssignExpr: make(map[string]string),
 	}
-	_ = handlerCtx
 
 	ri := returninspector.NewReturnInspector(handlerCtx)
 	pi := payloadinspector.NewPayloadInspector(handlerCtx)

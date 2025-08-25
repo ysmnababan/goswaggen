@@ -36,7 +36,7 @@ func NewGenerator(p Parser) *generator {
 	}
 }
 
-func (g *generator) CreateCommentBlock() *model.CommentBlock {
+func (g *generator) CreateCommentBlock() []string {
 	g.setSummary()
 	g.setDescription()
 	g.setTags()
@@ -45,7 +45,23 @@ func (g *generator) CreateCommentBlock() *model.CommentBlock {
 	g.setResponse()
 	g.setProduceType()
 	g.setPath()
-	return g.commentBlock
+
+	out := []string{}
+	cb := g.commentBlock
+	out = append(out, cb.Summary, cb.Description, cb.Tags)
+	if len(cb.Accept) != 0 {
+		out = append(out, cb.Accept)
+	}
+	if len(cb.Produce) != 0 {
+		out = append(out, cb.Produce)
+	}
+	if len(cb.Params) != 0 {
+		out = append(out, cb.Params...)
+	}
+	if len(cb.Response) != 0 {
+		out = append(out, cb.Response...)
+	}
+	return out
 }
 
 func (g *generator) setSummary() {
