@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"go/token"
 	"os"
 	"os/exec"
@@ -188,16 +187,16 @@ func TestGetAllHandlers(t *testing.T) {
 
 	// execute
 	handlers := parser.GetAllHandlers()
-	fmt.Println(handlers)
 	// assert
 	assert.Equal(t, 1, len(pkgs))
 	assert.Equal(t, 1, tmp.FileCount())
-	assert.Equal(t, 2, len(handlers))
+	assert.Equal(t, 1, len(handlers))
+
 	assert.ElementsMatch(t,
 		[]string{
-			"main.HandlerOne",
-			"main.HandlerTwo",
+			"HandlerOne",
+			"HandlerTwo",
 		},
-		handlers,
+		*handlers["main"],
 	)
 }

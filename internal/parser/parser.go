@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strings"
 
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/tracking"
@@ -58,16 +59,46 @@ func NewParser(root string) (*parser, error) {
 	}, nil
 }
 
-func (p *parser) GetAllHandlers() []string {
+func (p *parser) GetAllHandlers() map[string]*[]string {
 	ctx := context.NewRegistrationContext(p.pkgs, p.mainFuncDecl)
 	handlerRegs := tracking.FindHandlerRegistration(ctx)
 	if len(handlerRegs) == 0 {
 		return nil
 	}
-	out := make([]string, 0, len(handlerRegs))
+	out := make(map[string]*[]string)
 
 	for _, h := range handlerRegs {
-		out = append(out, h.GetFuncNameWithPackage())
+		funcNames, ok := out[h.GetPackageName()]
+		if !ok {
+			out[h.GetPackageName()] = &[]string{h.GetFuncName()}
+		} else {
+			*funcNames = append(*funcNames, h.GetFuncName())
+		}
+	}
+	return out
+}
+
+// GetHandlerByFuncName
+// Returns all matching handlers registration by name.
+// The func name can be the name only or combination of name and package name.
+// e.g. : name = `Login` or `auth.Login`.
+func (p *parser) GetHandlerByFuncName(name string) []*tracking.HandlerRegistration {
+	out := []*tracking.HandlerRegistration{}
+	ctx := context.NewRegistrationContext(p.pkgs, p.mainFuncDecl)
+	handlerRegs := tracking.FindHandlerRegistration(ctx)
+
+	if strings.Contains(name, ".") {
+		for _, h := range handlerRegs {
+			if h.GetFuncNameWithPackage() == name {
+				out = append(out, h)
+			}
+		}
+	} else {
+		for _, h := range handlerRegs {
+			if h.GetFuncName() == name {
+				out = append(out, h)
+			}
+		}
 	}
 	return out
 }
