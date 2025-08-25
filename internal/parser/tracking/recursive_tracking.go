@@ -6,6 +6,7 @@ import (
 	"go/types"
 	"strings"
 
+	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/framework"
 	"golang.org/x/tools/go/packages"
@@ -13,7 +14,7 @@ import (
 
 var FSET *token.FileSet
 
-var registrationHandler = []func(ctx *context.RegistrationContext) (*HandlerRegistration, bool){
+var registrationHandler = []func(ctx *context.RegistrationContext) (*model.HandlerRegistration, bool){
 	handleDirectRegistration,
 	handleGroupRegistration,
 	handleFunctionRegistration,
@@ -21,9 +22,9 @@ var registrationHandler = []func(ctx *context.RegistrationContext) (*HandlerRegi
 }
 
 // target pattern that can be recognized:
-// e.GET("/next-test", handlerTest)
+// e.GET("/next-test", handlerTest)x
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
-func handleDirectRegistration(ctx *context.RegistrationContext) (*HandlerRegistration, bool) {
+func handleDirectRegistration(ctx *context.RegistrationContext) (*model.HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
 	t, ok := exp.Fun.(*ast.SelectorExpr)
@@ -52,7 +53,7 @@ func handleDirectRegistration(ctx *context.RegistrationContext) (*HandlerRegistr
 		return nil, false
 	}
 	funDecl := ctx.GetFuncDecl(fn)
-	out := &HandlerRegistration{
+	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
@@ -66,7 +67,7 @@ func handleDirectRegistration(ctx *context.RegistrationContext) (*HandlerRegistr
 // search for registration with path like this:
 // second_group := first_group.Group("/second")
 // second_group.GET("/lol2", HandlerForSecondGroup)
-func handleGroupRegistration(ctx *context.RegistrationContext) (*HandlerRegistration, bool) {
+func handleGroupRegistration(ctx *context.RegistrationContext) (*model.HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
 	t, ok := exp.Fun.(*ast.SelectorExpr)
@@ -99,7 +100,7 @@ func handleGroupRegistration(ctx *context.RegistrationContext) (*HandlerRegistra
 		path = ctx.AliasForRouterTypeArgs
 	}
 	funDecl := ctx.GetFuncDecl(fn)
-	out := &HandlerRegistration{
+	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
@@ -187,7 +188,7 @@ func getRouterTypePrefix(ctx *context.RegistrationContext) (bool, string) {
 // Target pattern that can be recognized:
 //
 // RegisterEcho(e, "ignore-this")
-func handleFunctionRegistration(ctx *context.RegistrationContext) (*HandlerRegistration, bool) {
+func handleFunctionRegistration(ctx *context.RegistrationContext) (*model.HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
 	// make sure the filter out the function that not using registration param like `echo.echo` or `echo.Group`
@@ -209,7 +210,7 @@ func handleFunctionRegistration(ctx *context.RegistrationContext) (*HandlerRegis
 		return nil, false
 	}
 	ctx.AliasForRouterTypeArgs = prefix
-	out := &HandlerRegistration{
+	out := &model.HandlerRegistration{
 		Func:     fn,
 		IsDirect: false,
 	}
@@ -221,7 +222,7 @@ func handleFunctionRegistration(ctx *context.RegistrationContext) (*HandlerRegis
 // Target pattern that can be recognized:
 //
 // RegisterEcho(e, "ignore-this")
-func handleImportedFunctionRegistration(ctx *context.RegistrationContext) (*HandlerRegistration, bool) {
+func handleImportedFunctionRegistration(ctx *context.RegistrationContext) (*model.HandlerRegistration, bool) {
 	pkg := ctx.GetCurrentPackage()
 	exp := ctx.CurrentExpr
 
@@ -243,7 +244,7 @@ func handleImportedFunctionRegistration(ctx *context.RegistrationContext) (*Hand
 		return nil, false
 	}
 	ctx.AliasForRouterTypeArgs = prefix
-	out := &HandlerRegistration{
+	out := &model.HandlerRegistration{
 		Func:     fn,
 		IsDirect: false,
 	}
@@ -257,9 +258,9 @@ func handleImportedFunctionRegistration(ctx *context.RegistrationContext) (*Hand
 // e.GET("/next-test", handlerTest)
 // e.POST("/dummy", dummyhandler.JustDummyHandler)
 // something like calling function for registration
-func FindHandlerRegistration(ctx *context.RegistrationContext) []*HandlerRegistration {
+func FindHandlerRegistration(ctx *context.RegistrationContext) []*model.HandlerRegistration {
 	ctx.ResetGroupPath()
-	result := []*HandlerRegistration{}
+	result := []*model.HandlerRegistration{}
 
 	ast.Inspect(ctx.CurrentFunc, func(n ast.Node) bool {
 		switch t := n.(type) {

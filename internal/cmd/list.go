@@ -17,29 +17,20 @@ var listCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")
-		var p IParser
-		var err error
-		p, err = parser.NewParser(args[0])
+		prsr, err := parser.NewParser(args[0])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error while fetch all the handlers: %v\n", err)
+			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)
 		}
-		c := p.GetAllHandlers()
+		c := prsr.GetAllHandlers()
 		for p, funcs := range c {
 			fmt.Println(p, ":")
 			for _, f := range *funcs {
 				fmt.Println("	", f)
 			}
-			fmt.Printf("\n")
+			fmt.Println()
 		}
 	},
-}
-
-func GetAllControllers() map[string][]string {
-	return map[string][]string{
-		"user":  {"GetUser", "CreateUser", "UpdateUser", "DeleteUser"},
-		"order": {"CreateOrder", "GetCart", "CancelOrder"},
-	}
 }
 
 func init() {

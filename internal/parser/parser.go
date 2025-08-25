@@ -4,10 +4,16 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"strings"
 
+	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
+	"github.com/ysmnababan/goswaggen/internal/parser/inspector"
+	"github.com/ysmnababan/goswaggen/internal/parser/inspector/payloadinspector"
+	"github.com/ysmnababan/goswaggen/internal/parser/inspector/returninspector"
 	"github.com/ysmnababan/goswaggen/internal/parser/tracking"
+
 	"golang.org/x/tools/go/packages"
 )
 
@@ -19,6 +25,7 @@ type parser struct {
 	root         string
 	pkgs         []*packages.Package
 	mainFuncDecl *ast.FuncDecl
+	ctx          *context.RegistrationContext
 }
 
 func NewParser(root string) (*parser, error) {
@@ -56,6 +63,7 @@ func NewParser(root string) (*parser, error) {
 		root:         root,
 		pkgs:         pkgs,
 		mainFuncDecl: mainFuncDecl,
+		ctx:          context.NewRegistrationContext(pkgs, mainFuncDecl),
 	}, nil
 }
 
@@ -82,10 +90,9 @@ func (p *parser) GetAllHandlers() map[string]*[]string {
 // Returns all matching handlers registration by name.
 // The func name can be the name only or combination of name and package name.
 // e.g. : name = `Login` or `auth.Login`.
-func (p *parser) GetHandlerByFuncName(name string) []*tracking.HandlerRegistration {
-	out := []*tracking.HandlerRegistration{}
-	ctx := context.NewRegistrationContext(p.pkgs, p.mainFuncDecl)
-	handlerRegs := tracking.FindHandlerRegistration(ctx)
+func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, error) {
+	out := []*model.HandlerRegistration{}
+	handlerRegs := tracking.FindHandlerRegistration(p.ctx)
 
 	if strings.Contains(name, ".") {
 		for _, h := range handlerRegs {
@@ -100,5 +107,48 @@ func (p *parser) GetHandlerByFuncName(name string) []*tracking.HandlerRegistrati
 			}
 		}
 	}
-	return out
+
+	if len(out) == 0 {
+		return nil, fmt.Errorf("no handler found ... ")
+	}
+
+	if len(out) != 1 {
+		handlers := ""
+		for _, h := range out {
+			handlers += fmt.Sprintf("    %s\n", h.GetFuncNameWithPackage())
+		}
+		return nil, fmt.Errorf("multiple handlers found.\n%s", handlers)
+	}
+	return out[0], nil
+}
+
+func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration, error) {
+	handlerFunc, err := p.getHandlerByFuncName(name)
+	if err != nil {
+		return nil, err
+	}
+
+	handlerCtx := context.HandlerContext{
+		RegCtx:             p.ctx,
+		RegisteredHandler:  handlerFunc,
+		ExistingVarMap:     make(map[*types.Var]bool),
+		ResolvedAssignExpr: make(map[string]string),
+	}
+	_ = handlerCtx
+
+	ri := returninspector.NewReturnInspector(handlerCtx)
+	pi := payloadinspector.NewPayloadInspector(handlerCtx)
+	inspectorList := []inspector.Inspector{
+		ri, pi,
+	}
+
+	ast.Inspect(handlerFunc.FuncDecl, func(n ast.Node) bool {
+		for _, inspector := range inspectorList {
+			inspector.Inspect(n)
+		}
+		return true
+	})
+	handlerFunc.PayloadInfo = pi.Results
+	handlerFunc.ReturnResponse = ri.Results
+	return handlerFunc, nil
 }

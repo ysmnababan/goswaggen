@@ -1,4 +1,4 @@
-package tracking
+package model
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"go/types"
 	"strings"
 
-	"github.com/ysmnababan/goswaggen/internal/model"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -21,11 +20,11 @@ type HandlerRegistration struct {
 	FuncDecl  *ast.FuncDecl // The implementation of the handler function
 
 	//
-	Request []*RequestData // The requested data can be from body payload, query param or param
+	// Request []*RequestData // The requested data can be from body payload, query param or param
 	// Returns []*ReturnResponse // All `return` inside body function
 
-	PayloadInfo    []*model.PayloadInfo
-	ReturnResponse []*model.ReturnResponse
+	PayloadInfo    []*PayloadInfo
+	ReturnResponse []*ReturnResponse
 }
 
 func (n *HandlerRegistration) Print() {
@@ -68,40 +67,40 @@ func (n *HandlerRegistration) GetFrameworkName() string {
 	return "echo"
 }
 
-func (n *HandlerRegistration) GetPayloadInfos() []*model.PayloadInfo {
+func (n *HandlerRegistration) GetPayloadInfos() []*PayloadInfo {
 	return n.PayloadInfo
 }
 
-func (n *HandlerRegistration) ReturnResponses() []*model.ReturnResponse {
+func (n *HandlerRegistration) ReturnResponses() []*ReturnResponse {
 	return n.ReturnResponse
 }
 
-type StructField struct {
-	Name      string
-	VarType   string
-	Tag       map[string]string
-	IsPointer bool
-}
-type RequestData struct {
-	Call      *ast.CallExpr // The actual call expression
-	Param     *types.Var    // The param type
-	ParamDecl *ast.GenDecl  // Declaration of the param
-	BasicLit  string        // for queryparam and param args, e.g. <context>.Param("this")
+// type StructField struct {
+// 	Name      string
+// 	VarType   string
+// 	Tag       map[string]string
+// 	IsPointer bool
+// }
+// type RequestData struct {
+// 	Call      *ast.CallExpr // The actual call expression
+// 	Param     *types.Var    // The param type
+// 	ParamDecl *ast.GenDecl  // Declaration of the param
+// 	BasicLit  string        // for queryparam and param args, e.g. <context>.Param("this")
 
-	// Only for the `Bind()` method for
-	// storing the parameter's package type.
-	// The actual package can be found by searching
-	// through all the package again
-	PkgTypes *types.Package
-	// Body, QueryParam, Param.
-	// When it is 'Body', the Fields will be populated
-	// according to the handler HTTP method.
-	// If its 'POST/PUT/PATCH' => no need to populate the fields
+// 	// Only for the `Bind()` method for
+// 	// storing the parameter's package type.
+// 	// The actual package can be found by searching
+// 	// through all the package again
+// 	PkgTypes *types.Package
+// 	// Body, QueryParam, Param.
+// 	// When it is 'Body', the Fields will be populated
+// 	// according to the handler HTTP method.
+// 	// If its 'POST/PUT/PATCH' => no need to populate the fields
 
-	BindMethod string
+// 	BindMethod string
 
-	// For storing all the field from a struct when
-	// calling the `Bind()` binding function.
-	// Depends on the BindMethod and HTTP method
-	FieldLists []*StructField
-}
+// 	// For storing all the field from a struct when
+// 	// calling the `Bind()` binding function.
+// 	// Depends on the BindMethod and HTTP method
+// 	FieldLists []*StructField
+// }
