@@ -60,6 +60,10 @@ func (n *HandlerRegistration) GetFullPath() string {
 	return n.BasePath + strings.Trim(pathArg.Value, `"`)
 }
 
+func (n *HandlerRegistration) GetPackageName() string {
+	return n.Pkg.Name
+}
+
 func (n *HandlerRegistration) GetFrameworkName() string {
 	return "echo"
 }
