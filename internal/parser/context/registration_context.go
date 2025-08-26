@@ -97,6 +97,10 @@ func (c *RegistrationContext) GetCurrentPackage() *packages.Package {
 	return c.funcDeclToPkgMap[c.CurrentFunc]
 }
 
+func (c *RegistrationContext) GetPackageByFuncDecl(f *ast.FuncDecl) *packages.Package {
+	return c.funcDeclToPkgMap[f]
+}
+
 func (c *RegistrationContext) GetFuncDecl(fnObj *types.Func) *ast.FuncDecl {
 	out, ok := c.typeFuncToFuncDeclMap[fnObj]
 	if !ok {

@@ -66,12 +66,13 @@ func handleDirectRegistration(ctx *context.RegistrationContext) (*model.HandlerR
 		return nil, false
 	}
 	funDecl := ctx.GetFuncDecl(fn)
+	newPkg := ctx.GetPackageByFuncDecl(funDecl)
 	file, filepath := findFileForFuncDeclByPos(ctx.Pkgs, funDecl)
 	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
-		Pkg:      pkg,
+		Pkg:      newPkg,
 		FuncDecl: funDecl,
 		File:     file,
 		FilePath: filepath,
@@ -116,13 +117,14 @@ func handleGroupRegistration(ctx *context.RegistrationContext) (*model.HandlerRe
 		path = ctx.AliasForRouterTypeArgs
 	}
 	funDecl := ctx.GetFuncDecl(fn)
+	newPkg := ctx.GetPackageByFuncDecl(funDecl)
 	file, filepath := findFileForFuncDeclByPos(ctx.Pkgs, funDecl)
 	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
 		IsDirect: true,
 		BasePath: path,
-		Pkg:      pkg,
+		Pkg:      newPkg,
 		FuncDecl: funDecl,
 		File:     file,
 		FilePath: filepath,
