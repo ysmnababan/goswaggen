@@ -393,3 +393,152 @@ func TestFindHandlerRegistration_FunctionRegistration(t *testing.T) {
 		assert.Equal(t, fmt.Sprintf("Handler%d", i+1), h.FuncDecl.Name.Name)
 	}
 }
+
+func TestFindHandlerRegistration_ImportedFunctionRegistration(t *testing.T) {
+	t.Parallel()
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/pkg"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		pkg.InitializeRoute(e, "string")
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+
+	libCode := `
+	package pkg
+
+	import (
+		"fmt"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func DefaultHandler(c echo.Context) error {
+		return nil
+	}
+
+	func InitializeRoute(c *echo.Echo, str string) {
+		first_group := c.Group("/G1")
+		NotRegisterEcho("hehe")
+		RegisterEcho(c, "ignore-this")
+		RegisterEchoWithGroup(first_group)
+		RegisterEchoSelectorAsParamGroup(first_group.Group("/second"))
+		RegisterEchoGroupFromEcho(c.Group("/first"))
+	}
+	func NotRegisterEcho(str string) {
+		fmt.Println(str)
+	}
+
+	func RegisterEcho(e *echo.Echo, somedata string) {
+		e.GET("/TEST1", Handler1)
+
+		third_group := e.Group("/third")
+		third_group.GET("/TEST2", Handler2)
+
+		fourth_group := third_group.Group("/fourth")
+		fourth_group.GET("/TEST3", Handler3)
+	}
+
+	func RegisterEchoWithGroup(g *echo.Group) {
+		g.GET("/TEST4", Handler4)
+		g.GET("/TEST5", Handler5)
+		fifth_Group := g.Group("/fifth")
+		fifth_Group.GET("/TEST6", Handler6)
+	}
+
+	func RegisterEchoSelectorAsParamGroup(g *echo.Group) {
+		g.GET("/TEST7", Handler7)
+		sixth_group := g.Group("/sixth")
+		sixth_group.GET("/TEST8", Handler8)
+	}
+
+	func RegisterEchoGroupFromEcho(g *echo.Group) {
+		wrapper(g.Group("/wrapper"))
+	}
+
+	func wrapper(g *echo.Group) {
+		g.GET("/TEST9", Handler9)
+		seventh_group := g.Group("/seventh")
+		seventh_group.GET("/TEST10", Handler10)
+	}
+
+	func Handler1(c echo.Context) error {
+		return nil
+	}
+	func Handler2(c echo.Context) error {
+		return nil
+	}
+	func Handler3(c echo.Context) error {
+		return nil
+	}
+
+	func Handler4(c echo.Context) error {
+		return nil
+	}
+	func Handler5(c echo.Context) error {
+		return nil
+	}
+	func Handler6(c echo.Context) error {
+		return nil
+	}
+	func Handler7(c echo.Context) error {
+		return nil
+	}
+	func Handler8(c echo.Context) error {
+		return nil
+	}
+	func Handler9(c echo.Context) error {
+		return nil
+	}
+	func Handler10(c echo.Context) error {
+		return nil
+	}
+	`
+	err = tmp.AddNewFileInPackage("pkg", "handler_pkg.go", libCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	require.NotNil(t, mainFuncDecl)
+
+	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
+
+	// execute
+	handlerRegs := FindHandlerRegistration(ctx)
+
+	// assert
+	assert.Equal(t, 10, len(handlerRegs))
+	assert.Equal(t, "/TEST1", handlerRegs[0].GetFullPath())
+	assert.Equal(t, "/third/TEST2", handlerRegs[1].GetFullPath())
+	assert.Equal(t, "/third/fourth/TEST3", handlerRegs[2].GetFullPath())
+	assert.Equal(t, "/G1/TEST4", handlerRegs[3].GetFullPath())
+	assert.Equal(t, "/G1/TEST5", handlerRegs[4].GetFullPath())
+	assert.Equal(t, "/G1/fifth/TEST6", handlerRegs[5].GetFullPath())
+	assert.Equal(t, "/G1/second/TEST7", handlerRegs[6].GetFullPath())
+	assert.Equal(t, "/G1/second/sixth/TEST8", handlerRegs[7].GetFullPath())
+	assert.Equal(t, "/first/wrapper/TEST9", handlerRegs[8].GetFullPath())
+	assert.Equal(t, "/first/wrapper/seventh/TEST10", handlerRegs[9].GetFullPath())
+
+	for i, h := range handlerRegs {
+		assert.Equal(t, "GET", h.GetMethod())
+		assert.Equal(t, "handler_pkg.go", filepath.Base(h.FilePath))
+		assert.Equal(t, fmt.Sprintf("Handler%d", i+1), h.FuncDecl.Name.Name)
+	}
+}
