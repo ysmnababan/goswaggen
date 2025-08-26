@@ -19,8 +19,7 @@ var generateCmd = &cobra.Command{
 	Long:    "Generate Swagger comment block",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: change the root base on where the code is executed
-		root := ""
+		root, _ := os.Getwd()
 		targetFunc := args[0]
 		err := Generate(root, targetFunc, os.Stdout)
 		if err != nil {

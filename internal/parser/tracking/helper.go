@@ -1,4 +1,4 @@
-package parser
+package tracking
 
 import (
 	"go/ast"
@@ -6,7 +6,9 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func searchDeclFun(pkgs []*packages.Package, targetName string, packageName *string) (*ast.FuncDecl, *ast.File) {
+var MAIN_PACKAGE_NAME = "main"
+
+func SearchDeclFun(pkgs []*packages.Package, targetName string, packageName *string) (*ast.FuncDecl, *ast.File) {
 	for _, pkg := range pkgs {
 		if packageName != nil && *packageName != "" && pkg.Name != *packageName {
 			// search for particular package name (is requested)

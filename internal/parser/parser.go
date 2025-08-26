@@ -54,7 +54,7 @@ func NewParser(root string) (*parser, error) {
 	if len(pkgs) == 0 {
 		return nil, fmt.Errorf("no package found")
 	}
-	mainFuncDecl, _ := searchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := tracking.SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
 	if mainFuncDecl == nil {
 		return nil, fmt.Errorf("no main file found")
 	}

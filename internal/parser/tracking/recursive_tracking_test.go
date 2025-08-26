@@ -104,3 +104,47 @@ func TestResolveHandlerExpr_ImportedHandler(t *testing.T) {
 	assert.Equal(t, "HandlerTest", typeFunc.Name())
 	assert.Equal(t, "lib", x.Name)
 }
+
+func TestFindHandlerRegistration(t *testing.T) {
+	t.Parallel()
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"hohoho/lib"
+		"net/http"
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", lib.HandlerTest)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package lib
+
+	import (
+		"github.com/labstack/echo/v4"
+	)
+
+	func HandlerTest(c echo.Context) error {
+		return nil 
+	}
+	`
+	err = tmp.AddNewFileInPackage("lib", "lib.go", libCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	require.NotNil(t, mainFuncDecl)
+}
