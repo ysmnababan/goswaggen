@@ -12,24 +12,37 @@ import (
 )
 
 type temporaryTestFile struct {
-	tempFile  string
-	fset      *token.FileSet
-	fileCount int
+	tempFile         string
+	fset             *token.FileSet
+	fileCount        int
+	ignoreVendorFile bool
 }
 
-func NewTemporaryTestFile(tmp string) (*temporaryTestFile, error) {
-	src, err := GetVendorTestPath()
-	if err != nil {
-		return nil, err
+type Option func(*temporaryTestFile)
+
+func IgnoreVendorFile(t *temporaryTestFile) {
+	t.ignoreVendorFile = true
+}
+
+func NewTemporaryTestFile(tmp string, opts ...Option) (*temporaryTestFile, error) {
+	out := &temporaryTestFile{
+		fset: token.NewFileSet(),
 	}
-	err = fileutil.CopyDir(src, tmp)
-	if err != nil {
-		return nil, err
+	for _, opt := range opts {
+		opt(out)
 	}
-	return &temporaryTestFile{
-		tempFile: tmp,
-		fset:     token.NewFileSet(),
-	}, nil
+	if !out.ignoreVendorFile {
+		src, err := GetVendorTestPath()
+		if err != nil {
+			return nil, err
+		}
+		err = fileutil.CopyDir(src, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	out.tempFile = tmp
+	return out, nil
 }
 
 func (t *temporaryTestFile) GetTempFile() string {
