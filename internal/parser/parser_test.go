@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -301,4 +302,108 @@ func TestNewParser_WithVendorFileAndGoFile(t *testing.T) {
 	// assert
 	assert.Contains(t, err.Error(), "no main file found")
 	assert.Nil(t, parser)
+}
+
+func TestGetHandlerByFuncName_NoHandlerFound(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"net/http"
+		"github.com/labstack/echo/v4"
+	)
+
+	func handlerTest(c echo.Context) error{
+		return nil 
+	}
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", handlerTest)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+
+	root := tmp.GetTempFile()
+	parser, err := NewParser(root)
+	require.NoError(t, err)
+
+	t.Run("without package name", func(t *testing.T) {
+		// execute
+		_, err = parser.getHandlerByFuncName("someHandler")
+
+		//assert
+		assert.ErrorContains(t, err, "no handler found")
+	})
+
+	t.Run("with package name", func(t *testing.T) {
+		// execute
+		_, err = parser.getHandlerByFuncName("main.someHandler")
+
+		//assert
+		assert.ErrorContains(t, err, "no handler found")
+	})
+}
+
+func TestGetHandlerByFuncName_DuplicateHandler(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/lib"
+		"net/http"
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", HandlerTest)
+		e.GET("/test2", lib.HandlerTest)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func HandlerTest(e echo.Context) error {
+		return nil
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package lib
+
+	import (
+		"github.com/labstack/echo/v4"
+	)
+
+	func HandlerTest(c echo.Context) error {
+		return nil 
+	}
+	`
+	err = tmp.AddNewFileInPackage("lib", "lib.go", libCode)
+	require.NoError(t, err)
+
+	root := tmp.GetTempFile()
+	parser, err := NewParser(root)
+	require.NoError(t, err)
+
+	// execute
+	_, err = parser.getHandlerByFuncName("HandlerTest")
+
+	//assert
+	fmt.Println(err.Error())
+	assert.ErrorContains(t, err, "multiple handlers found")
+	assert.ErrorContains(t, err, "main.HandlerTest")
+	assert.ErrorContains(t, err, "lib.HandlerTest")
 }

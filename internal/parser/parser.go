@@ -120,9 +120,9 @@ func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, 
 	if len(out) != 1 {
 		handlers := ""
 		for _, h := range out {
-			handlers += fmt.Sprintf("    %s\n", h.GetFuncNameWithPackage())
+			handlers += fmt.Sprintf("    %s	: (%s)\n", h.GetFuncNameWithPackage(), h.FilePath)
 		}
-		return nil, fmt.Errorf("multiple handlers found.\n%s", handlers)
+		return nil, fmt.Errorf("multiple handlers found\n%s", handlers)
 	}
 	return out[0], nil
 }
