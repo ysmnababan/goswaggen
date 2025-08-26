@@ -189,3 +189,75 @@ func TestFindHandlerRegistration_DirectHandler(t *testing.T) {
 	assert.Equal(t, "DefaultHandler", handlerRegs[3].FuncDecl.Name.Name)
 	assert.Equal(t, "DefaultHandler", handlerRegs[4].FuncDecl.Name.Name)
 }
+
+func TestFindHandlerRegistration_GroupRegistration(t *testing.T) {
+	t.Parallel()
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/pkg"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		first_group := e.Group("/g1")
+		second_group := first_group.Group("/g2")
+
+		first_group.GET("/one", defaultHandler)
+		second_group.PATCH("/two", pkg.DefaultHandler)
+
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func defaultHandler(c echo.Context) error {
+		return nil
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package pkg
+
+	import "github.com/labstack/echo/v4"
+
+	func DefaultHandler(c echo.Context) error {
+		return nil
+	}
+
+	`
+	err = tmp.AddNewFileInPackage("pkg", "handler_pkg.go", libCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	require.NotNil(t, mainFuncDecl)
+
+	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
+
+	// execute
+	handlerRegs := FindHandlerRegistration(ctx)
+
+	// assert
+	assert.Equal(t, 2, len(handlerRegs))
+	assert.Equal(t, "/g1/one", handlerRegs[0].GetFullPath())
+	assert.Equal(t, "/g1/g2/two", handlerRegs[1].GetFullPath())
+
+	assert.Equal(t, "GET", handlerRegs[0].GetMethod())
+	assert.Equal(t, "PATCH", handlerRegs[1].GetMethod())
+
+	assert.Equal(t, "main.go", filepath.Base(handlerRegs[0].FilePath))
+	assert.Equal(t, "handler_pkg.go", filepath.Base(handlerRegs[1].FilePath))
+
+	assert.Equal(t, "defaultHandler", handlerRegs[0].FuncDecl.Name.Name)
+	assert.Equal(t, "DefaultHandler", handlerRegs[1].FuncDecl.Name.Name)
+}
