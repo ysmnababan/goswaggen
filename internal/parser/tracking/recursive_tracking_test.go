@@ -109,7 +109,7 @@ func TestResolveHandlerExpr_ImportedHandler(t *testing.T) {
 }
 
 func TestFindHandlerRegistration_DirectHandler(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
 	mainCode := `
@@ -184,6 +184,12 @@ func TestFindHandlerRegistration_DirectHandler(t *testing.T) {
 	assert.Equal(t, "handler_pkg.go", filepath.Base(handlerRegs[3].FilePath))
 	assert.Equal(t, "handler_pkg.go", filepath.Base(handlerRegs[4].FilePath))
 
+	assert.Equal(t, "main", handlerRegs[0].Pkg.Name)
+	assert.Equal(t, "main", handlerRegs[1].Pkg.Name)
+	assert.Equal(t, "main", handlerRegs[2].Pkg.Name)
+	assert.Equal(t, "pkg", handlerRegs[3].Pkg.Name)
+	assert.Equal(t, "pkg", handlerRegs[4].Pkg.Name)
+
 	assert.Equal(t, "defaultHandler", handlerRegs[0].FuncDecl.Name.Name)
 	assert.Equal(t, "defaultHandler", handlerRegs[1].FuncDecl.Name.Name)
 	assert.Equal(t, "defaultHandler", handlerRegs[2].FuncDecl.Name.Name)
@@ -192,7 +198,7 @@ func TestFindHandlerRegistration_DirectHandler(t *testing.T) {
 }
 
 func TestFindHandlerRegistration_GroupRegistration(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
 	mainCode := `
@@ -264,7 +270,7 @@ func TestFindHandlerRegistration_GroupRegistration(t *testing.T) {
 }
 
 func TestFindHandlerRegistration_FunctionRegistration(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
 	mainCode := `
@@ -395,7 +401,7 @@ func TestFindHandlerRegistration_FunctionRegistration(t *testing.T) {
 }
 
 func TestFindHandlerRegistration_ImportedFunctionRegistration(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
 	mainCode := `
