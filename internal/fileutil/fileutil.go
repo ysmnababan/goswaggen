@@ -7,16 +7,6 @@ import (
 	"path/filepath"
 )
 
-var rootDir string
-
-func SetRootDir(r string) {
-	rootDir = r
-}
-
-func RootDir() string {
-	return rootDir
-}
-
 func FindProjectRoot(startDir string) (string, error) {
 	dir := startDir
 	for {

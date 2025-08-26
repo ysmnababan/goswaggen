@@ -17,7 +17,8 @@ var listCmd = &cobra.Command{
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")
-		prsr, err := parser.NewParser(args[0])
+		root, _ := os.Getwd()
+		prsr, err := parser.NewParser(root)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)
