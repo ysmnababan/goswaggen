@@ -54,6 +54,11 @@ func NewParser(root string) (*parser, error) {
 	if len(pkgs) == 0 {
 		return nil, fmt.Errorf("no package found")
 	}
+	for _, pkg := range pkgs {
+		for _, e := range pkg.Errors {
+			return nil, fmt.Errorf("package error: %w", e)
+		}
+	}
 	mainFuncDecl, _ := tracking.SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
 	if mainFuncDecl == nil {
 		return nil, fmt.Errorf("no main file found")
