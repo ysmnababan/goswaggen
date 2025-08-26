@@ -1,4 +1,4 @@
-module hohoho
+module basicapi
 
 go 1.24.1
 

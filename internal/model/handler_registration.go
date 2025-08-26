@@ -10,15 +10,15 @@ import (
 )
 
 type HandlerRegistration struct {
-	Func      *types.Func   // The resolved handler function as obj
-	Call      *ast.CallExpr // The actual call expression
-	IsDirect  bool          // True if registered directly on Framework instance
-	GroupPath string        // Group path segments, e.g., ["/api", "/v1"]
-	BasePath  string        // Combined path, e.g., "/api/v1/resource"
-	FromFunc  *types.Func   // The function where this registration happens
-	Pkg       *packages.Package
-	FuncDecl  *ast.FuncDecl // The implementation of the handler function
-	File      *ast.File
+	Func     *types.Func   // The resolved handler function as obj
+	Call     *ast.CallExpr // The actual call expression
+	IsDirect bool          // True if registered directly on Framework instance
+	BasePath string        // Combined path, e.g., "/api/v1/resource"
+	FromFunc *types.Func   // The function where this registration happens
+	Pkg      *packages.Package
+	FuncDecl *ast.FuncDecl // The implementation of the handler function
+	File     *ast.File
+	FilePath string
 
 	PayloadInfo    []*PayloadInfo
 	ReturnResponse []*ReturnResponse

@@ -21,14 +21,17 @@ var registrationHandler = []func(ctx *context.RegistrationContext) (*model.Handl
 	handleImportedFunctionRegistration,
 }
 
-func findFileForFuncDeclByPos(pkg *packages.Package, fn *ast.FuncDecl) *ast.File {
+func findFileForFuncDeclByPos(pkgs []*packages.Package, fn *ast.FuncDecl) (*ast.File, string) {
 	pos := fn.Pos()
-	for _, f := range pkg.Syntax {
-		if f.Pos() <= pos && pos <= f.End() {
-			return f
+	for _, pkg := range pkgs {
+		for _, f := range pkg.Syntax {
+			if f.Pos() <= pos && pos <= f.End() {
+				filepath := pkg.Fset.File(f.Pos()).Name()
+				return f, filepath
+			}
 		}
 	}
-	return nil
+	return nil, ""
 }
 
 // target pattern that can be recognized:
@@ -63,7 +66,7 @@ func handleDirectRegistration(ctx *context.RegistrationContext) (*model.HandlerR
 		return nil, false
 	}
 	funDecl := ctx.GetFuncDecl(fn)
-	file := findFileForFuncDeclByPos(pkg, funDecl)
+	file, filepath := findFileForFuncDeclByPos(ctx.Pkgs, funDecl)
 	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
@@ -71,6 +74,7 @@ func handleDirectRegistration(ctx *context.RegistrationContext) (*model.HandlerR
 		Pkg:      pkg,
 		FuncDecl: funDecl,
 		File:     file,
+		FilePath: filepath,
 	}
 	return out, true
 }
@@ -112,7 +116,7 @@ func handleGroupRegistration(ctx *context.RegistrationContext) (*model.HandlerRe
 		path = ctx.AliasForRouterTypeArgs
 	}
 	funDecl := ctx.GetFuncDecl(fn)
-	file := findFileForFuncDeclByPos(pkg, funDecl)
+	file, filepath := findFileForFuncDeclByPos(ctx.Pkgs, funDecl)
 	out := &model.HandlerRegistration{
 		Func:     fn,
 		Call:     exp,
@@ -121,6 +125,7 @@ func handleGroupRegistration(ctx *context.RegistrationContext) (*model.HandlerRe
 		Pkg:      pkg,
 		FuncDecl: funDecl,
 		File:     file,
+		FilePath: filepath,
 	}
 	return out, true
 }
