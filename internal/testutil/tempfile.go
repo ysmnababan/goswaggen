@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"go/token"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,16 +13,21 @@ import (
 )
 
 type temporaryTestFile struct {
-	tempFile         string
-	fset             *token.FileSet
-	fileCount        int
-	ignoreVendorFile bool
+	tempFile                   string
+	fset                       *token.FileSet
+	fileCount                  int
+	ignoreVendorFile           bool
+	withEchoAPIResponsePackage bool
 }
 
 type Option func(*temporaryTestFile)
 
 func IgnoreVendorFile(t *temporaryTestFile) {
 	t.ignoreVendorFile = true
+}
+
+func WithEchoAPIResponsePackage(t *temporaryTestFile) {
+	t.withEchoAPIResponsePackage = true
 }
 
 func NewTemporaryTestFile(tmp string, opts ...Option) (*temporaryTestFile, error) {
@@ -42,6 +48,16 @@ func NewTemporaryTestFile(tmp string, opts ...Option) (*temporaryTestFile, error
 		}
 	}
 	out.tempFile = tmp
+	if out.withEchoAPIResponsePackage {
+		err := out.AddNewFileInPackage("response", "error.go", echoErrorResponseCodeBase)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = out.AddNewFileInPackage("response", "success.go", echoSuccessResponseCodeBase)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	return out, nil
 }
 
@@ -58,7 +74,7 @@ func (t *temporaryTestFile) AddNewFile(filename, code string) error {
 
 func (t *temporaryTestFile) AddNewFileInPackage(packageName, filename, code string) error {
 	libDir := filepath.Join(t.tempFile, packageName)
-	err := os.Mkdir(libDir, 0755)
+	err := os.MkdirAll(libDir, 0755)
 	if err != nil {
 		return fmt.Errorf("failed to create new folder %w", err)
 	}

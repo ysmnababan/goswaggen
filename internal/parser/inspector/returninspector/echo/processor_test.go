@@ -753,5 +753,62 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 }
 
 func TestProcess(t *testing.T) {
-	
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"fmt"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+
+		"basicapi/response"
+	)
+
+	type UserLoginRequest struct {
+	}
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", Login)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func testLogin() (string, error) {
+		return "", nil
+	}
+
+	func Login(c echo.Context) error {
+		req := &UserLoginRequest{}
+		err := c.Bind(req)
+		if err != nil {
+			return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
+		}
+
+		err = c.Validate(req)
+		if err != nil {
+			return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
+		}
+
+		res, err := testLogin()
+		if err != nil {
+			return err
+		}
+		// return c.JSON(400, res)
+		return response.WithStatusOKResponse(res, c)
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+
+	_, err = tmp.BuildPackages()
+	require.NoError(t, err)
 }
