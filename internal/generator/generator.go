@@ -218,7 +218,7 @@ func processResponse(r *model.ReturnResponse) string {
 		prefix = "Success"
 		desc = DEFAULT_SUCCESS_RESPONSE_DESCRIPTION
 	}
-	schemeType, ok := GO_TO_SWAGGO_SCHEME_TYPES_MAP[strings.ToLower(r.AcceptType)]
+	schemeType, ok := GO_TO_SWAGGO_SCHEME_TYPES_MAP[strings.ToLower(r.ProduceType)]
 	if !ok {
 		schemeType = DEFAULT_RESPONSE_SCHEME_TYPE
 	}
@@ -282,9 +282,9 @@ func (g *generator) setProduceType() {
 	accepts := []string{}
 
 	for _, r := range g.responses {
-		if ok := isExist[r.AcceptType]; !ok {
-			isExist[r.AcceptType] = true
-			accepts = append(accepts, r.AcceptType)
+		if ok := isExist[r.ProduceType]; !ok {
+			isExist[r.ProduceType] = true
+			accepts = append(accepts, r.ProduceType)
 		}
 	}
 	if len(accepts) != 0 {

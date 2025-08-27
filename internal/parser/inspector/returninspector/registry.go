@@ -7,7 +7,7 @@ import (
 )
 
 func Register(ti *types.Info) []ReturnProcessor {
-	echoReturnProcessor := echo.NewReturnInspector(ti)
+	echoReturnProcessor := echo.NewReturnProcessor(ti)
 	ret := []ReturnProcessor{echoReturnProcessor}
 	return ret
 }

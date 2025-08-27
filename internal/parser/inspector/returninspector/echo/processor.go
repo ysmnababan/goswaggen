@@ -16,7 +16,7 @@ type EchoReturnProcessor struct {
 	visitedRetStmt map[*ast.ReturnStmt]bool
 }
 
-func NewReturnInspector(ti *types.Info) *EchoReturnProcessor {
+func NewReturnProcessor(ti *types.Info) *EchoReturnProcessor {
 	return &EchoReturnProcessor{
 		// typesInfo:      hc.GetTypesInfo(),
 		typesInfo:      ti,
@@ -138,13 +138,14 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 	result := model.ReturnResponse{
 		ReturnStmt: ret,
 	}
-	// if i.Match(ret) {
-	// 	result.FrameWork = "echo"
-	// }
 	if i.isFmworkStandardResponse(ret) {
 		callExpr := ret.Results[0].(*ast.CallExpr)
 		selExpr := callExpr.Fun.(*ast.SelectorExpr)
-		result.AcceptType = selExpr.Sel.Name
+		ptype, ok := framework.ECHO_PRODUCE_MAP[selExpr.Sel.Name]
+		if !ok || ptype == "" {
+			return nil
+		}
+		result.ProduceType = ptype
 		paramMap := framework.ECHO_FRAMEWORK_STANDARD_RESPONSE[selExpr.Sel.Name]
 		if paramMap[0] != 0 {
 			result.StatusCode = i.resolveStatusCode(callExpr.Args[paramMap[0]-1])
@@ -157,7 +158,8 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		}
 		return &result
 	}
-	result.AcceptType = "json"
+	result.ProduceType = "json"
+	result.SchemaType = "{object}"
 	if isErrorResponse {
 		result.IsSuccess = false
 		result.StatusCode = 500

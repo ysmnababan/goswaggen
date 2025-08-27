@@ -43,7 +43,7 @@ func (ri *ReturnInspector) PrintResult() {
 		}
 		fmt.Printf(`
 // @Accept %s
-// @%s %d _%s_ %s`, val.AcceptType, successTag, val.StatusCode, val.SchemaType, val.StructType)
+// @%s %d _%s_ %s`, val.ProduceType, successTag, val.StatusCode, val.SchemaType, val.StructType)
 		fmt.Print("\n\n")
 	}
 }

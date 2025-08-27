@@ -169,3 +169,25 @@ var HTTP_STATUS_CODE_MAPPING = map[string]int{
 	"StatusNetworkAuthenticationRequired": 511,
 	"511":                                 511,
 }
+
+
+var ECHO_PRODUCE_MAP = map[string]string{
+	"HTML":       "html",
+	"HTMLBlob":   "html",
+	"String":     "plain", // text/plain
+	"JSON":       "json",
+	"JSONPretty": "json",
+	"JSONBlob":   "json",
+	"JSONP":      "json", // usually still application/javascript
+	"JSONPBlob":  "json",
+	"XML":        "xml",
+	"XMLPretty":  "xml",
+	"XMLBlob":    "xml",
+	"Blob":       "octet-stream", // depends on content-type, fallback
+	"Stream":     "octet-stream", // generic stream
+	"File":       "octet-stream",
+	"Attachment": "octet-stream",
+	"Inline":     "octet-stream",
+	"NoContent":  "", // no @Produce
+	"Redirect":   "", // no @Produce
+}

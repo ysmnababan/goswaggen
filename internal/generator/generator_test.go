@@ -507,40 +507,40 @@ func TestProcessResponse(t *testing.T) {
 		{
 			name: "success json",
 			in: &model.ReturnResponse{
-				IsSuccess:  true,
-				AcceptType: "json",
-				StatusCode: 200,
-				StructType: "myPkg.MyStruct",
+				IsSuccess:   true,
+				ProduceType: "json",
+				StatusCode:  200,
+				StructType:  "myPkg.MyStruct",
 			},
 			want: "// @Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "success string",
 			in: &model.ReturnResponse{
-				IsSuccess:  true,
-				AcceptType: "string",
-				StatusCode: 200,
-				StructType: "myPkg.MyStruct",
+				IsSuccess:   true,
+				ProduceType: "string",
+				StatusCode:  200,
+				StructType:  "myPkg.MyStruct",
 			},
 			want: "// @Success 200 {string} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "success struct",
 			in: &model.ReturnResponse{
-				IsSuccess:  true,
-				AcceptType: "struct",
-				StatusCode: 200,
-				StructType: "myPkg.MyStruct",
+				IsSuccess:   true,
+				ProduceType: "struct",
+				StatusCode:  200,
+				StructType:  "myPkg.MyStruct",
 			},
 			want: "// @Success 200 {object} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "failure float",
 			in: &model.ReturnResponse{
-				IsSuccess:  false,
-				AcceptType: "float32",
-				StatusCode: 400,
-				StructType: "myPkg.MyStruct",
+				IsSuccess:   false,
+				ProduceType: "float32",
+				StatusCode:  400,
+				StructType:  "myPkg.MyStruct",
 			},
 			want: "// @Failure 400 {number} myPkg.MyStruct " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
 		},
@@ -563,7 +563,7 @@ func TestSetAcceptType(t *testing.T) {
 			name: "produce only json",
 			in: []*model.ReturnResponse{
 				{
-					AcceptType: "json",
+					ProduceType: "json",
 				},
 			},
 			want: "// @Produce json",
@@ -577,13 +577,13 @@ func TestSetAcceptType(t *testing.T) {
 			name: "produce json and xml",
 			in: []*model.ReturnResponse{
 				{
-					AcceptType: "json",
+					ProduceType: "json",
 				},
 				{
-					AcceptType: "json",
+					ProduceType: "json",
 				},
 				{
-					AcceptType: "xml",
+					ProduceType: "xml",
 				},
 			},
 			want: "// @Produce json,xml",
@@ -689,10 +689,10 @@ func TestPrintCommentBlock(t *testing.T) {
 		},
 		responses: []*model.ReturnResponse{
 			{
-				StructType: "myPkg.LoginResponse",
-				StatusCode: 200,
-				IsSuccess:  true,
-				AcceptType: "json",
+				StructType:  "myPkg.LoginResponse",
+				StatusCode:  200,
+				IsSuccess:   true,
+				ProduceType: "json",
 			},
 		},
 		commentBlock: &model.CommentBlock{},

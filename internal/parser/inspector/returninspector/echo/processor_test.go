@@ -12,6 +12,7 @@ import (
 
 	"github.com/ysmnababan/goswaggen/internal/fileutil"
 	"github.com/ysmnababan/goswaggen/internal/model"
+	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 
 	"github.com/stretchr/testify/assert"
@@ -598,10 +599,10 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType: "response.APIResponse",
-				StatusCode: 500,
-				IsSuccess:  false,
-				AcceptType: "json",
+				StructType:  "response.APIResponse",
+				StatusCode:  500,
+				IsSuccess:   false,
+				ProduceType: "json",
 			},
 		},
 		{
@@ -615,17 +616,17 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType: "response.APIResponse",
-				StatusCode: 200,
-				IsSuccess:  true,
-				AcceptType: "json",
+				StructType:  "response.APIResponse",
+				StatusCode:  200,
+				IsSuccess:   true,
+				ProduceType: "json",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := p.resolveReturnResponse(tt.retStmt, tt.isError)
-			assert.Equal(t, tt.expected.AcceptType, got.AcceptType)
+			assert.Equal(t, tt.expected.ProduceType, got.ProduceType)
 			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
 			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
 			assert.Equal(t, tt.expected.StructType, got.StructType)
@@ -692,10 +693,10 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType: "myPkg.User",
-				StatusCode: 400,
-				IsSuccess:  false,
-				AcceptType: "JSON",
+				StructType:  "myPkg.User",
+				StatusCode:  400,
+				IsSuccess:   false,
+				ProduceType: "JSON",
 			},
 		},
 		{
@@ -713,10 +714,10 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType: "myPkg.User",
-				StatusCode: 200,
-				IsSuccess:  true,
-				AcceptType: "JSON",
+				StructType:  "myPkg.User",
+				StatusCode:  200,
+				IsSuccess:   true,
+				ProduceType: "JSON",
 			},
 		},
 		{
@@ -734,17 +735,17 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType: "",
-				StatusCode: 200,
-				IsSuccess:  true,
-				AcceptType: "String",
+				StructType:  "",
+				StatusCode:  200,
+				IsSuccess:   true,
+				ProduceType: "String",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := p.resolveReturnResponse(tt.retStmt, tt.isError)
-			assert.Equal(t, tt.expected.AcceptType, got.AcceptType)
+			assert.Equal(t, tt.expected.ProduceType, got.ProduceType)
 			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
 			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
 			assert.Equal(t, tt.expected.StructType, got.StructType)
@@ -752,7 +753,7 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 	}
 }
 
-func TestProcess(t *testing.T) {
+func TestProcess_NonStandardResponse(t *testing.T) {
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
 		testutil.WithEchoAPIResponsePackage,
@@ -809,6 +810,37 @@ func TestProcess(t *testing.T) {
 	err = tmp.AddNewFile("main.go", mainCode)
 	require.NoError(t, err)
 
-	_, err = tmp.BuildPackages()
+	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
+	targetFunc, _ := helper.SearchDeclFun(pkgs, "Login", &helper.MAIN_PACKAGE_NAME)
+	require.NotNil(t, targetFunc)
+	var mainPkg *packages.Package
+	for _, pkg := range pkgs {
+		if pkg.Name == "main" {
+			mainPkg = pkg
+		}
+	}
+	out := []*model.ReturnResponse{}
+	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo)
+	ast.Inspect(targetFunc, func(n ast.Node) bool {
+		if ret := returnProcessor.Process(n); ret != nil {
+			out = append(out, ret)
+		}
+		return true
+	})
+
+	assert.Equal(t, 4, len(out))
+	for _, o := range out {
+		assert.Equal(t, "{object}", o.SchemaType)
+		assert.Equal(t, "response.APIResponse", o.StructType)
+		assert.Equal(t, "json", o.ProduceType)
+	}
+	assert.Equal(t, 500, out[0].StatusCode)
+	assert.Equal(t, 500, out[1].StatusCode)
+	assert.Equal(t, 500, out[2].StatusCode)
+	assert.Equal(t, 200, out[3].StatusCode)
+	assert.Equal(t, false, out[0].IsSuccess)
+	assert.Equal(t, false, out[1].IsSuccess)
+	assert.Equal(t, false, out[2].IsSuccess)
+	assert.Equal(t, true, out[3].IsSuccess)
 }
