@@ -1,6 +1,7 @@
 package echo
 
 import (
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -843,4 +844,142 @@ func TestProcess_NonStandardResponse(t *testing.T) {
 	assert.Equal(t, false, out[1].IsSuccess)
 	assert.Equal(t, false, out[2].IsSuccess)
 	assert.Equal(t, true, out[3].IsSuccess)
+}
+
+func TestProcess_StandardResponse(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"net/http"
+		"strings"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	type UserLoginRequest struct {
+		Data int
+	}
+
+	type Response struct {
+	}
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", DummyHandler)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func DummyHandler(c echo.Context) error {
+		req := &UserLoginRequest{}
+		resp := &Response{}
+		_ = c.Bind(req)
+		switch req.Data {
+		case 1:
+			// JSON with string
+			return c.JSON(200, "somestring") // -> {string}
+		case 2:
+			// JSON with integer
+			return c.JSON(200, 123) // -> {integer}
+		case 3:
+			// JSON with number
+			return c.JSON(200, 3.14) // -> {number}
+		case 4:
+			// JSON with boolean
+			return c.JSON(200, true) // -> {boolean}
+		case 5:
+			// JSON with array
+			return c.JSON(200, []string{"a", "b"}) // -> {array}
+		case 6:
+			// JSON with object
+			return c.JSON(200, resp) // -> {object}
+		case 7:
+			// XML with object
+			return c.XML(200, struct {
+				Title string
+			}{"Echo XML"}) // -> {object}
+		case 8:
+			// XML with array
+			return c.XML(200, []int{1, 2, 3}) // -> {array}
+		case 9:
+			// HTML response
+			return c.HTML(200, "<h1>Hello HTML</h1>") // -> {string}
+		case 10:
+			// Plain string response
+			return c.String(200, "hello world") // -> {string}
+		case 11:
+			// File download
+			return c.File("somefile.txt") // -> {file}
+		case 12:
+			// File attachment
+			return c.Attachment("somefile.txt", "download.txt") // -> {file}
+		case 13:
+			// Inline file
+			return c.Inline("somefile.txt", "inline.txt") // -> {file}
+		case 14:
+			// Blob response
+			return c.Blob(200, "application/octet-stream", []byte("rawdata")) // -> {file}
+		case 15:
+			// Stream response
+			return c.Stream(200, "application/octet-stream", strings.NewReader("streamdata")) // -> {file}
+		case 16:
+			// No content
+			return c.NoContent(204) // -> ""
+		case 17:
+			// Redirect
+			return c.Redirect(302, "https://example.com") // -> ""
+		default:
+			// Default JSON object
+			return c.JSON(200, struct {
+				Message string
+			}{"default"}) // -> {object}
+		}
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	targetFunc, _ := helper.SearchDeclFun(pkgs, "DummyHandler", &helper.MAIN_PACKAGE_NAME)
+	require.NotNil(t, targetFunc)
+	var mainPkg *packages.Package
+	for _, pkg := range pkgs {
+		if pkg.Name == "main" {
+			mainPkg = pkg
+		}
+	}
+	out := []*model.ReturnResponse{}
+	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo)
+	ast.Inspect(targetFunc, func(n ast.Node) bool {
+		if ret := returnProcessor.Process(n); ret != nil {
+			out = append(out, ret)
+		}
+		return true
+	})
+
+	assert.Equal(t, 16, len(out))
+	for _, o := range out {
+		o.ReturnStmt = nil
+		fmt.Println(o)
+		// assert.Equal(t, "{object}", o.SchemaType)
+		// assert.Equal(t, "response.APIResponse", o.StructType)
+		// assert.Equal(t, "json", o.ProduceType)
+	}
+	// assert.Equal(t, 500, out[0].StatusCode)
+	// assert.Equal(t, 500, out[1].StatusCode)
+	// assert.Equal(t, 500, out[2].StatusCode)
+	// assert.Equal(t, 200, out[3].StatusCode)
+	// assert.Equal(t, false, out[0].IsSuccess)
+	// assert.Equal(t, false, out[1].IsSuccess)
+	// assert.Equal(t, false, out[2].IsSuccess)
+	// assert.Equal(t, true, out[3].IsSuccess)
 }
