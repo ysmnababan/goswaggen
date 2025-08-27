@@ -9,6 +9,7 @@ import (
 
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
+	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/parser/inspector"
 	"github.com/ysmnababan/goswaggen/internal/parser/inspector/payloadinspector"
 	"github.com/ysmnababan/goswaggen/internal/parser/inspector/returninspector"
@@ -59,7 +60,7 @@ func NewParser(root string) (*parser, error) {
 			return nil, fmt.Errorf("package error: %w", e)
 		}
 	}
-	mainFuncDecl, _ := tracking.SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
 	if mainFuncDecl == nil {
 		return nil, fmt.Errorf("no main file found")
 	}

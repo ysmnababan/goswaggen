@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
+	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
 
@@ -156,7 +157,7 @@ func TestFindHandlerRegistration_DirectHandler(t *testing.T) {
 
 	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
-	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
 	require.NotNil(t, mainFuncDecl)
 
 	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
@@ -246,7 +247,7 @@ func TestFindHandlerRegistration_GroupRegistration(t *testing.T) {
 
 	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
-	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
 	require.NotNil(t, mainFuncDecl)
 
 	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
@@ -372,7 +373,7 @@ func TestFindHandlerRegistration_FunctionRegistration(t *testing.T) {
 
 	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
-	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
 	require.NotNil(t, mainFuncDecl)
 
 	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
@@ -521,7 +522,8 @@ func TestFindHandlerRegistration_ImportedFunctionRegistration(t *testing.T) {
 
 	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
-	mainFuncDecl, _ := SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
+
 	require.NotNil(t, mainFuncDecl)
 
 	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)

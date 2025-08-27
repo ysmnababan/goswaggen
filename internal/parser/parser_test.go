@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ysmnababan/goswaggen/internal/parser/tracking"
+	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
 
@@ -48,7 +48,7 @@ func TestGetAllHandlers(t *testing.T) {
 
 	pkgs, err := tmp.BuildPackages()
 	require.NoError(t, err)
-	mainFuncDecl, _ := tracking.SearchDeclFun(pkgs, "main", &MAIN_PACKAGE_NAME)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
 	require.NotNil(t, mainFuncDecl)
 	require.Equal(t, "main", mainFuncDecl.Name.Name)
 	parser := &parser{
