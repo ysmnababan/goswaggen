@@ -3,13 +3,12 @@ package returninspector
 import (
 	"fmt"
 	"go/ast"
+	"go/types"
 
 	"github.com/ysmnababan/goswaggen/internal/model"
-	"github.com/ysmnababan/goswaggen/internal/parser/context"
 )
 
 type ReturnProcessor interface {
-	Name() string
 	Match(ast.Node) bool
 	Process(ast.Node) *model.ReturnResponse
 }
@@ -19,10 +18,10 @@ type ReturnInspector struct {
 	Results    []*model.ReturnResponse
 }
 
-func NewReturnInspector(hc context.HandlerContext) *ReturnInspector {
+func NewReturnInspector(ti *types.Info) *ReturnInspector {
 	return &ReturnInspector{
 		Results:    []*model.ReturnResponse{},
-		processors: Register(hc),
+		processors: Register(ti),
 	}
 }
 

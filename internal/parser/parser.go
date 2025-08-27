@@ -140,7 +140,7 @@ func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration
 		ResolvedAssignExpr: make(map[string]string),
 	}
 
-	ri := returninspector.NewReturnInspector(handlerCtx)
+	ri := returninspector.NewReturnInspector(handlerFunc.Pkg.TypesInfo)
 	pi := payloadinspector.NewPayloadInspector(handlerCtx)
 	inspectorList := []inspector.Inspector{
 		ri, pi,

@@ -8,7 +8,6 @@ import (
 	"log"
 
 	"github.com/ysmnababan/goswaggen/internal/model"
-	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/framework"
 )
 
@@ -17,9 +16,10 @@ type EchoReturnProcessor struct {
 	visitedRetStmt map[*ast.ReturnStmt]bool
 }
 
-func NewReturnInspector(hc context.HandlerContext) *EchoReturnProcessor {
+func NewReturnInspector(ti *types.Info) *EchoReturnProcessor {
 	return &EchoReturnProcessor{
-		typesInfo:      hc.GetTypesInfo(),
+		// typesInfo:      hc.GetTypesInfo(),
+		typesInfo:      ti,
 		visitedRetStmt: make(map[*ast.ReturnStmt]bool),
 	}
 }
@@ -201,10 +201,6 @@ func (i *EchoReturnProcessor) Process(in ast.Node) *model.ReturnResponse {
 	}
 	i.visitedRetStmt[retStmt] = true
 	return i.resolveReturnResponse(retStmt, IsErrorResponse)
-}
-
-func (i *EchoReturnProcessor) Name() string {
-	return "echo return processor"
 }
 
 func (i *EchoReturnProcessor) Match(n ast.Node) bool {

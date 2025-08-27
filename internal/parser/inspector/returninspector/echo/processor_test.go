@@ -751,3 +751,7 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 		})
 	}
 }
+
+func TestProcess(t *testing.T) {
+	
+}
