@@ -755,7 +755,7 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				ReturnDataType: "myPkg.User",
 				StatusCode:     400,
 				IsSuccess:      false,
-				ProduceType:    "JSON",
+				ProduceType:    "json",
 			},
 		},
 		{
@@ -776,7 +776,7 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				ReturnDataType: "myPkg.User",
 				StatusCode:     200,
 				IsSuccess:      true,
-				ProduceType:    "JSON",
+				ProduceType:    "json",
 			},
 		},
 		{
@@ -787,17 +787,17 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 					&ast.CallExpr{
 						Args: []ast.Expr{
 							statusOkParam,
-							&ast.BasicLit{Value: "output"},
+							&ast.BasicLit{Value: "output", Kind: token.STRING},
 						},
 						Fun: stringFun,
 					},
 				},
 			},
 			expected: model.ReturnResponse{
-				ReturnDataType: "",
+				ReturnDataType: "string",
 				StatusCode:     200,
 				IsSuccess:      true,
-				ProduceType:    "String",
+				ProduceType:    "plain",
 			},
 		},
 	}
