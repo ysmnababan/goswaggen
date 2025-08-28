@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/framework"
@@ -105,20 +106,8 @@ func (i *EchoReturnProcessor) resolveStatusCode(n ast.Expr) int {
 	return out
 }
 
-func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
-	var ident *ast.Ident
-	switch p := n.(type) {
-	case *ast.SelectorExpr:
-		x, ok := p.X.(*ast.Ident)
-		if !ok {
-			return ""
-		}
-		log.Println("X:", x.Name)
-		ident = p.Sel
-	case *ast.Ident:
-		ident = p
-	}
-	vn, ok := i.typesInfo.Types[ident]
+func resolveTypeName(typeInfo *types.Info, ident *ast.Ident) string {
+	vn, ok := typeInfo.Types[ident]
 	if !ok {
 		return ""
 	}
@@ -128,10 +117,60 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 	}
 	named, ok := vType.(*types.Named)
 	if !ok {
-		return ""
+		return vType.String()
 	}
-	obj := named.Obj()
-	return fmt.Sprintf("%s.%s", obj.Pkg().Name(), obj.Name())
+	typeName := named.Obj()
+	return fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
+}
+
+func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
+	switch p := n.(type) {
+	case *ast.SelectorExpr:
+		x, ok := p.X.(*ast.Ident)
+		if !ok {
+			return ""
+		}
+		log.Println("X:", x.Name)
+		return resolveTypeName(i.typesInfo, p.Sel)
+	case *ast.Ident:
+		log.Println("ident:", p)
+		return resolveTypeName(i.typesInfo, p)
+	case *ast.BasicLit:
+		return strings.ToLower(p.Kind.String())
+	case *ast.CompositeLit:
+		switch cmpLit := p.Type.(type) {
+		case *ast.Ident:
+			return resolveTypeName(i.typesInfo, cmpLit)
+		case *ast.StructType:
+			// TODO: handle this later
+			return "___" // to
+		case *ast.ArrayType:
+			ident, ok := cmpLit.Elt.(*ast.Ident)
+			if ok {
+				return "[]" + resolveTypeName(i.typesInfo, ident)
+			}
+
+			selExpr, ok := cmpLit.Elt.(*ast.SelectorExpr)
+			if !ok {
+				return ""
+			}
+			x, ok := selExpr.X.(*ast.Ident)
+			if !ok {
+				return ""
+			}
+			return "[]" + fmt.Sprintf("%s.%s", x.Name, selExpr.Sel.Name)
+		case *ast.SelectorExpr:
+			fmt.Println("ouch", cmpLit)
+			x, ok := cmpLit.X.(*ast.Ident)
+			if !ok {
+				return ""
+			}
+			return fmt.Sprintf("%s.%s", x.Name, cmpLit.Sel.String())
+		default:
+			return ""
+		}
+	}
+	return ""
 }
 
 func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isErrorResponse bool) *model.ReturnResponse {
@@ -142,7 +181,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		callExpr := ret.Results[0].(*ast.CallExpr)
 		selExpr := callExpr.Fun.(*ast.SelectorExpr)
 		ptype, ok := framework.ECHO_PRODUCE_MAP[selExpr.Sel.Name]
-		if !ok || ptype == "" {
+		if !ok {
 			return nil
 		}
 		result.ProduceType = ptype
@@ -151,7 +190,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 			result.StatusCode = i.resolveStatusCode(callExpr.Args[paramMap[0]-1])
 		}
 		if paramMap[1] != 0 {
-			result.StructType = i.resolvePayloadType(callExpr.Args[paramMap[1]-1])
+			result.ReturnDataType = i.resolvePayloadType(callExpr.Args[paramMap[1]-1])
 		}
 		if result.StatusCode/100 == 2 {
 			result.IsSuccess = true
@@ -163,11 +202,11 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 	if isErrorResponse {
 		result.IsSuccess = false
 		result.StatusCode = 500
-		result.StructType = "response.APIResponse" // TODO: change this from config
+		result.ReturnDataType = "response.APIResponse" // TODO: change this from config
 	} else {
 		result.IsSuccess = true
 		result.StatusCode = 200
-		result.StructType = "response.APIResponse" // TODO: change this from config
+		result.ReturnDataType = "response.APIResponse" // TODO: change this from config
 	}
 	return &result
 }

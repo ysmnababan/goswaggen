@@ -600,10 +600,10 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType:  "response.APIResponse",
-				StatusCode:  500,
-				IsSuccess:   false,
-				ProduceType: "json",
+				ReturnDataType: "response.APIResponse",
+				StatusCode:     500,
+				IsSuccess:      false,
+				ProduceType:    "json",
 			},
 		},
 		{
@@ -617,10 +617,10 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType:  "response.APIResponse",
-				StatusCode:  200,
-				IsSuccess:   true,
-				ProduceType: "json",
+				ReturnDataType: "response.APIResponse",
+				StatusCode:     200,
+				IsSuccess:      true,
+				ProduceType:    "json",
 			},
 		},
 	}
@@ -630,7 +630,7 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 			assert.Equal(t, tt.expected.ProduceType, got.ProduceType)
 			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
 			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
-			assert.Equal(t, tt.expected.StructType, got.StructType)
+			assert.Equal(t, tt.expected.ReturnDataType, got.ReturnDataType)
 		})
 	}
 }
@@ -694,10 +694,10 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType:  "myPkg.User",
-				StatusCode:  400,
-				IsSuccess:   false,
-				ProduceType: "JSON",
+				ReturnDataType: "myPkg.User",
+				StatusCode:     400,
+				IsSuccess:      false,
+				ProduceType:    "JSON",
 			},
 		},
 		{
@@ -715,10 +715,10 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType:  "myPkg.User",
-				StatusCode:  200,
-				IsSuccess:   true,
-				ProduceType: "JSON",
+				ReturnDataType: "myPkg.User",
+				StatusCode:     200,
+				IsSuccess:      true,
+				ProduceType:    "JSON",
 			},
 		},
 		{
@@ -736,10 +736,10 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 				},
 			},
 			expected: model.ReturnResponse{
-				StructType:  "",
-				StatusCode:  200,
-				IsSuccess:   true,
-				ProduceType: "String",
+				ReturnDataType: "",
+				StatusCode:     200,
+				IsSuccess:      true,
+				ProduceType:    "String",
 			},
 		},
 	}
@@ -749,7 +749,7 @@ func TestResolveReturnResponse_StandardResponse(t *testing.T) {
 			assert.Equal(t, tt.expected.ProduceType, got.ProduceType)
 			assert.Equal(t, tt.expected.IsSuccess, got.IsSuccess)
 			assert.Equal(t, tt.expected.StatusCode, got.StatusCode)
-			assert.Equal(t, tt.expected.StructType, got.StructType)
+			assert.Equal(t, tt.expected.ReturnDataType, got.ReturnDataType)
 		})
 	}
 }
@@ -833,7 +833,7 @@ func TestProcess_NonStandardResponse(t *testing.T) {
 	assert.Equal(t, 4, len(out))
 	for _, o := range out {
 		assert.Equal(t, "{object}", o.SchemaType)
-		assert.Equal(t, "response.APIResponse", o.StructType)
+		assert.Equal(t, "response.APIResponse", o.ReturnDataType)
 		assert.Equal(t, "json", o.ProduceType)
 	}
 	assert.Equal(t, 500, out[0].StatusCode)
@@ -856,6 +856,7 @@ func TestProcess_StandardResponse(t *testing.T) {
 	package main
 
 	import (
+		"basicapi/pkg"
 		"net/http"
 		"strings"
 
@@ -880,8 +881,9 @@ func TestProcess_StandardResponse(t *testing.T) {
 
 	func DummyHandler(c echo.Context) error {
 		req := &UserLoginRequest{}
-		resp := &Response{}
+		resp := &pkg.User{}
 		_ = c.Bind(req)
+		someInt:= 20
 		switch req.Data {
 		case 1:
 			// JSON with string
@@ -936,6 +938,16 @@ func TestProcess_StandardResponse(t *testing.T) {
 		case 17:
 			// Redirect
 			return c.Redirect(302, "https://example.com") // -> ""
+		case 18:
+			return c.JSON(200, someInt) // -> {number}
+		case 19:
+			return c.JSON(200, UserLoginRequest{}) //
+		case 20:
+			return c.JSON(200, pkg.User{}) // 
+		case 21:
+			return c.JSON(200, []UserLoginRequest{}) //
+		case 22:
+			return c.JSON(200, []pkg.User{}) // 
 		default:
 			// Default JSON object
 			return c.JSON(200, struct {
@@ -945,6 +957,14 @@ func TestProcess_StandardResponse(t *testing.T) {
 	}
 	`
 	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package pkg
+
+	type User struct {
+	}
+`
+	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
 	require.NoError(t, err)
 
 	pkgs, err := tmp.BuildPackages()
@@ -966,10 +986,10 @@ func TestProcess_StandardResponse(t *testing.T) {
 		return true
 	})
 
-	assert.Equal(t, 16, len(out))
-	for _, o := range out {
+	assert.Equal(t, 23, len(out))
+	for i, o := range out {
 		o.ReturnStmt = nil
-		fmt.Println(o)
+		fmt.Println(o, i+1)
 		// assert.Equal(t, "{object}", o.SchemaType)
 		// assert.Equal(t, "response.APIResponse", o.StructType)
 		// assert.Equal(t, "json", o.ProduceType)

@@ -227,7 +227,7 @@ func processResponse(r *model.ReturnResponse) string {
 		prefix,
 		r.StatusCode,
 		schemeType,
-		r.StructType,
+		r.ReturnDataType,
 		desc,
 	)
 	return out

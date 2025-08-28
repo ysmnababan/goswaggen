@@ -3,10 +3,10 @@ package model
 import "go/ast"
 
 type ReturnResponse struct {
-	ReturnStmt  *ast.ReturnStmt
-	StructType  string
-	SchemaType  string // {object}, {string}, {number}, etc
-	StatusCode  int
-	IsSuccess   bool
-	ProduceType string // json, xml, string
+	ReturnStmt     *ast.ReturnStmt
+	ReturnDataType string
+	SchemaType     string // {object}, {string}, {number}, etc
+	StatusCode     int
+	IsSuccess      bool
+	ProduceType    string // json, xml, string
 }
