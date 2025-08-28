@@ -1,9 +1,7 @@
 package model
 
-import "go/ast"
-
 type ReturnResponse struct {
-	ReturnStmt     *ast.ReturnStmt
+	// ReturnStmt     *ast.ReturnStmt
 	ReturnDataType string
 	SchemaType     string // {object}, {string}, {number}, etc
 	StatusCode     int

@@ -172,7 +172,7 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 
 func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isErrorResponse bool) *model.ReturnResponse {
 	result := model.ReturnResponse{
-		ReturnStmt: ret,
+		// ReturnStmt: ret,
 	}
 	if i.isFmworkStandardResponse(ret) {
 		callExpr := ret.Results[0].(*ast.CallExpr)

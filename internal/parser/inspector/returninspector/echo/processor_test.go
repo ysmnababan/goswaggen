@@ -1046,7 +1046,7 @@ func TestProcess_StandardResponse(t *testing.T) {
 
 	assert.Equal(t, 23, len(out))
 	for i, o := range out {
-		o.ReturnStmt = nil
+		// o.ReturnStmt = nil
 		fmt.Println(o, i+1)
 		// assert.Equal(t, "{object}", o.SchemaType)
 		// assert.Equal(t, "response.APIResponse", o.StructType)
