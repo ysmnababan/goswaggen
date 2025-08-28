@@ -183,6 +183,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		}
 		result.ProduceType = ptype
 		paramMap := framework.ECHO_FRAMEWORK_STANDARD_RESPONSE[selExpr.Sel.Name]
+		result.StatusCode = 200 // standard status code
 		if paramMap[0] != 0 {
 			result.StatusCode = i.resolveStatusCode(callExpr.Args[paramMap[0]-1])
 		}
@@ -192,6 +193,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 		if result.StatusCode/100 == 2 {
 			result.IsSuccess = true
 		}
+		result.SchemaType = resolveSchemeType(selExpr.Sel.Name, result.ReturnDataType)
 		return &result
 	}
 	result.ProduceType = "json"

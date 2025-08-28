@@ -21,6 +21,64 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+func TestResolveSchemeType(t *testing.T) {
+	tests := []struct {
+		name        string
+		produceType string
+		returnType  string
+		expected    string
+	}{
+		// Plain text responses
+		{"HTML", "HTML", "string", "{string}"},
+		{"HTMLBlob", "HTMLBlob", "string", "{string}"},
+		{"String", "String", "string", "{string}"},
+
+		// JSONP
+		{"JSONP", "JSONP", "object", "{string}"},
+		{"JSONPBlob", "JSONPBlob", "object", "{string}"},
+
+		// JSON / XML blob
+		{"JSONBlob", "JSONBlob", "object", "{string}"},
+		{"XMLBlob", "XMLBlob", "object", "{string}"},
+
+		// Binary / file
+		{"Blob", "Blob", "[]byte", "{file}"},
+		{"Stream", "Stream", "[]byte", "{file}"},
+		{"File", "File", "[]byte", "{file}"},
+		{"Attachment", "Attachment", "[]byte", "{file}"},
+		{"Inline", "Inline", "[]byte", "{file}"},
+
+		// NoContent / Redirect
+		{"NoContent", "NoContent", "object", ""},
+		{"Redirect", "Redirect", "object", ""},
+
+		// JSON / XML with typed return
+		{"JSON-string", "JSON", "string", "{string}"},
+		{"JSON-int", "JSON", "int", "{integer}"},
+		{"JSON-float", "JSON", "float", "{number}"},
+		{"JSON-bool", "JSON", "bool", "{boolean}"},
+		{"JSON-byte-array", "JSON", "[]byte", "{string}"},
+		{"JSON-array", "JSON", "[]MyStruct", "{array}"},
+		{"JSON-object", "JSON", "MyStruct", "{object}"},
+
+		{"XML-string", "XML", "string", "{string}"},
+		{"XMLPretty-object", "XMLPretty", "MyStruct", "{object}"},
+		{"JSONPretty-array", "JSONPretty", "[]OtherStruct", "{array}"},
+
+		// Default fallback
+		{"Unknown", "SomethingElse", "OtherStruct", "{object}"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := resolveSchemeType(tt.produceType, tt.returnType)
+			if got != tt.expected {
+				t.Errorf("resolveSchemeType(%q, %q) = %q; want %q",
+					tt.produceType, tt.returnType, got, tt.expected)
+			}
+		})
+	}
+}
 func TestIsErrorIfStmt(t *testing.T) {
 	// setup
 	const input = `

@@ -37,8 +37,8 @@ var ECHO_FRAMEWORK_STANDARD_RESPONSE = map[string][2]int{
 	"File":       {0, 0},
 	"Attachment": {0, 0},
 	"Inline":     {0, 0},
-	"Blob":       {1, 2},
-	"Stream":     {1, 2},
+	"Blob":       {1, 0},
+	"Stream":     {1, 0},
 	"NoContent":  {1, 0},
 	"Redirect":   {1, 0},
 }
