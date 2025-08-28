@@ -133,7 +133,6 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 		log.Println("X:", x.Name)
 		return resolveTypeName(i.typesInfo, p.Sel)
 	case *ast.Ident:
-		log.Println("ident:", p)
 		return resolveTypeName(i.typesInfo, p)
 	case *ast.BasicLit:
 		return strings.ToLower(p.Kind.String())
@@ -149,7 +148,6 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 			if ok {
 				return "[]" + resolveTypeName(i.typesInfo, ident)
 			}
-
 			selExpr, ok := cmpLit.Elt.(*ast.SelectorExpr)
 			if !ok {
 				return ""
@@ -160,7 +158,6 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 			}
 			return "[]" + fmt.Sprintf("%s.%s", x.Name, selExpr.Sel.Name)
 		case *ast.SelectorExpr:
-			fmt.Println("ouch", cmpLit)
 			x, ok := cmpLit.X.(*ast.Ident)
 			if !ok {
 				return ""
@@ -265,4 +262,41 @@ func (i *EchoReturnProcessor) Match(n ast.Node) bool {
 		return false
 	}
 	return obj.Type().String() == framework.ECHO_CONTEXT_TYPE
+}
+
+func resolveSchemeType(produceType, returnType string) string {
+	switch produceType {
+	case "HTML", "HTMLBlob", "String":
+		return "{string}"
+	case "JSONP", "JSONPBlob":
+		return "{string}"
+	case "JSONBlob":
+		return "{string}" // raw bytes
+	case "XMLBlob":
+		return "{string}"
+	case "Blob", "Stream", "File", "Attachment", "Inline":
+		return "{file}"
+	case "NoContent", "Redirect":
+		return "" // no schema
+	case "XML", "XMLPretty", "JSON", "JSONPretty":
+		switch returnType {
+		case "string":
+			return "{string}"
+		case "int":
+			return "{integer}"
+		case "float":
+			return "{number}"
+		case "bool":
+			return "{boolean}"
+		case "[]byte":
+			return "{string}" // binary
+		default:
+			if strings.Contains(returnType, "[]") {
+				return "{array}"
+			}
+			return "{object}"
+		}
+	default:
+		return "{object}"
+	}
 }
