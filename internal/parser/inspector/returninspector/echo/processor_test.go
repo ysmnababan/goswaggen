@@ -534,96 +534,96 @@ func TestResolvePayloadType(t *testing.T) {
 	}
 }
 
-func TestMatch(t *testing.T) {
-	echopkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
-	echotypeName := types.NewTypeName(0, echopkg, "Context", nil)
-	echonamed := types.NewNamed(echotypeName, nil, nil)
-	echoFun := ast.NewIdent("JSON")
+// func TestMatch(t *testing.T) {
+// 	echopkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
+// 	echotypeName := types.NewTypeName(0, echopkg, "Context", nil)
+// 	echonamed := types.NewNamed(echotypeName, nil, nil)
+// 	echoFun := ast.NewIdent("JSON")
 
-	mypkg := types.NewPackage("mypkg", "mypkg")
-	mytypeName := types.NewTypeName(0, mypkg, "Wrap", nil)
-	mynamed := types.NewNamed(mytypeName, nil, nil)
-	myFun := ast.NewIdent("ErrorWrap")
+// 	mypkg := types.NewPackage("mypkg", "mypkg")
+// 	mytypeName := types.NewTypeName(0, mypkg, "Wrap", nil)
+// 	mynamed := types.NewNamed(mytypeName, nil, nil)
+// 	myFun := ast.NewIdent("ErrorWrap")
 
-	p := &EchoReturnProcessor{
-		typesInfo: &types.Info{
-			Uses: make(map[*ast.Ident]types.Object),
-		},
-	}
-	p.typesInfo.Uses[echoFun] = echonamed.Obj()
-	p.typesInfo.Uses[myFun] = mynamed.Obj()
+// 	p := &EchoReturnProcessor{
+// 		typesInfo: &types.Info{
+// 			Uses: make(map[*ast.Ident]types.Object),
+// 		},
+// 	}
+// 	p.typesInfo.Uses[echoFun] = echonamed.Obj()
+// 	p.typesInfo.Uses[myFun] = mynamed.Obj()
 
-	tests := []struct {
-		name     string
-		stmt     ast.Node
-		expected bool
-	}{
-		{
-			name: "not return stmt",
-			stmt: &ast.BasicLit{
-				Value: "some-string",
-			},
-			expected: false,
-		},
-		{
-			name: "no result",
-			stmt: &ast.ReturnStmt{
-				Results: []ast.Expr{},
-			},
-			expected: false,
-		},
-		{
-			name: "len result > 1",
-			stmt: &ast.ReturnStmt{
-				Results: []ast.Expr{&ast.BasicLit{}, &ast.BasicLit{}},
-			},
-			expected: false,
-		},
-		{
-			name: "echo.JSON()",
-			stmt: &ast.ReturnStmt{
-				Results: []ast.Expr{
-					&ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   ast.NewIdent("c"),
-							Sel: echoFun,
-						},
-					},
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "mypkg.ErrorWrap()",
-			stmt: &ast.ReturnStmt{
-				Results: []ast.Expr{
-					&ast.CallExpr{
-						Fun: &ast.SelectorExpr{
-							X:   ast.NewIdent("c"),
-							Sel: myFun,
-						},
-					},
-				},
-			},
-			expected: false,
-		},
-		{
-			name:     "plain text",
-			stmt:     &ast.BasicLit{Value: "value"},
-			expected: false,
-		},
-		{
-			name:     "plain error",
-			stmt:     &ast.Ident{Name: "err"},
-			expected: false,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, p.Match(tt.stmt))
-		})
-	}
-}
+// 	tests := []struct {
+// 		name     string
+// 		stmt     ast.Node
+// 		expected bool
+// 	}{
+// 		{
+// 			name: "not return stmt",
+// 			stmt: &ast.BasicLit{
+// 				Value: "some-string",
+// 			},
+// 			expected: false,
+// 		},
+// 		{
+// 			name: "no result",
+// 			stmt: &ast.ReturnStmt{
+// 				Results: []ast.Expr{},
+// 			},
+// 			expected: false,
+// 		},
+// 		{
+// 			name: "len result > 1",
+// 			stmt: &ast.ReturnStmt{
+// 				Results: []ast.Expr{&ast.BasicLit{}, &ast.BasicLit{}},
+// 			},
+// 			expected: false,
+// 		},
+// 		{
+// 			name: "echo.JSON()",
+// 			stmt: &ast.ReturnStmt{
+// 				Results: []ast.Expr{
+// 					&ast.CallExpr{
+// 						Fun: &ast.SelectorExpr{
+// 							X:   ast.NewIdent("c"),
+// 							Sel: echoFun,
+// 						},
+// 					},
+// 				},
+// 			},
+// 			expected: true,
+// 		},
+// 		{
+// 			name: "mypkg.ErrorWrap()",
+// 			stmt: &ast.ReturnStmt{
+// 				Results: []ast.Expr{
+// 					&ast.CallExpr{
+// 						Fun: &ast.SelectorExpr{
+// 							X:   ast.NewIdent("c"),
+// 							Sel: myFun,
+// 						},
+// 					},
+// 				},
+// 			},
+// 			expected: false,
+// 		},
+// 		{
+// 			name:     "plain text",
+// 			stmt:     &ast.BasicLit{Value: "value"},
+// 			expected: false,
+// 		},
+// 		{
+// 			name:     "plain error",
+// 			stmt:     &ast.Ident{Name: "err"},
+// 			expected: false,
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			assert.Equal(t, tt.expected, p.Match(tt.stmt))
+// 		})
+// 	}
+// }
 
 func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 	p := &EchoReturnProcessor{
@@ -1055,22 +1055,22 @@ func TestProcess_StandardResponse(t *testing.T) {
 	}{
 		{"json", "{string}", "string"},                 // 1: JSON with string
 		{"json", "{integer}", "int"},                   // 2: JSON with integer
-		{"json", "{number}", "float"},                // 3: JSON with number
+		{"json", "{number}", "float"},                  // 3: JSON with number
 		{"json", "{boolean}", "bool"},                  // 4: JSON with boolean
 		{"json", "{array}", "[]string"},                // 5: JSON with array
 		{"json", "{object}", "pkg.User"},               // 6: JSON with object
-		{"xml", "{object}", "___"},                        // 7: XML with object (anonymous struct)
+		{"xml", "{object}", "___"},                     // 7: XML with object (anonymous struct)
 		{"xml", "{array}", "[]int"},                    // 8: XML with array
-		{"html", "{string}", "string"},                // 9: HTML response
+		{"html", "{string}", "string"},                 // 9: HTML response
 		{"plain", "{string}", "string"},                // 10: Plain string response
-		{"octet-stream", "{file}", ""},                        // 11: File download
-		{"octet-stream", "{file}", ""},                        // 12: File attachment
-		{"octet-stream", "{file}", ""},                        // 13: Inline file
-		{"octet-stream", "{file}", ""},                  // 14: Blob response
-		{"octet-stream", "{file}", ""},                        // 15: Stream response
-		{"", "", ""},                              // 16: No content
-		{"", "", ""},                              // 17: Redirect
-		{"json", "{integer}", "int"},                    // 18: JSON with someInt
+		{"octet-stream", "{file}", ""},                 // 11: File download
+		{"octet-stream", "{file}", ""},                 // 12: File attachment
+		{"octet-stream", "{file}", ""},                 // 13: Inline file
+		{"octet-stream", "{file}", ""},                 // 14: Blob response
+		{"octet-stream", "{file}", ""},                 // 15: Stream response
+		{"", "", ""},                                   // 16: No content
+		{"", "", ""},                                   // 17: Redirect
+		{"json", "{integer}", "int"},                   // 18: JSON with someInt
 		{"json", "{object}", "main.UserLoginRequest"},  // 19: JSON with UserLoginRequest{}
 		{"json", "{object}", "pkg.User"},               // 20: JSON with pkg.User{}
 		{"json", "{array}", "[]main.UserLoginRequest"}, // 21: JSON with []UserLoginRequest{}

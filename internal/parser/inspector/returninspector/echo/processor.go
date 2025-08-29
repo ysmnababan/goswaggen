@@ -243,28 +243,28 @@ func (i *EchoReturnProcessor) Process(in ast.Node) *model.ReturnResponse {
 	return i.resolveReturnResponse(retStmt, IsErrorResponse)
 }
 
-func (i *EchoReturnProcessor) Match(n ast.Node) bool {
-	retStmt, ok := n.(*ast.ReturnStmt)
-	if !ok {
-		return false
-	}
-	if len(retStmt.Results) != 1 {
-		return false
-	}
-	callExpr, ok := retStmt.Results[0].(*ast.CallExpr)
-	if !ok {
-		return false
-	}
-	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return false
-	}
-	obj, ok := i.typesInfo.Uses[selExpr.Sel]
-	if !ok {
-		return false
-	}
-	return obj.Type().String() == framework.ECHO_CONTEXT_TYPE
-}
+// func (i *EchoReturnProcessor) Match(n ast.Node) bool {
+// 	retStmt, ok := n.(*ast.ReturnStmt)
+// 	if !ok {
+// 		return false
+// 	}
+// 	if len(retStmt.Results) != 1 {
+// 		return false
+// 	}
+// 	callExpr, ok := retStmt.Results[0].(*ast.CallExpr)
+// 	if !ok {
+// 		return false
+// 	}
+// 	selExpr, ok := callExpr.Fun.(*ast.SelectorExpr)
+// 	if !ok {
+// 		return false
+// 	}
+// 	obj, ok := i.typesInfo.Uses[selExpr.Sel]
+// 	if !ok {
+// 		return false
+// 	}
+// 	return obj.Type().String() == framework.ECHO_CONTEXT_TYPE
+// }
 
 func resolveSchemeType(produceType, returnType string) string {
 	switch produceType {

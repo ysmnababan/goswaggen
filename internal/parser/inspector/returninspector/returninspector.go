@@ -9,7 +9,7 @@ import (
 )
 
 type ReturnProcessor interface {
-	Match(ast.Node) bool
+	// Match(ast.Node) bool
 	Process(ast.Node) *model.ReturnResponse
 }
 

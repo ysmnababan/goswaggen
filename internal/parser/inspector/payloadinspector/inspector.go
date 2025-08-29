@@ -3,16 +3,12 @@ package payloadinspector
 import (
 	"fmt"
 	"go/ast"
-	
 
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
-
-	
 )
 
 type PayloadProcessor interface {
-	Match(ast.Node) bool
 	Process(ast.Node) *model.PayloadInfo
 }
 
@@ -44,11 +40,9 @@ func (pi *PayloadInspector) PrintResult() {
 
 func (pi *PayloadInspector) Inspect(n ast.Node) {
 	for _, p := range pi.processors {
-		if p.Match(n) {
-			ret := p.Process(n)
-			if ret != nil {
-				pi.Results = append(pi.Results, ret)
-			}
+		ret := p.Process(n)
+		if ret != nil {
+			pi.Results = append(pi.Results, ret)
 		}
 	}
 }

@@ -515,6 +515,6 @@ func (p *EchoPayloadProcessor) Process(n ast.Node) *model.PayloadInfo {
 	return nil
 }
 
-func (p *EchoPayloadProcessor) Match(ast.Node) bool {
-	return true
-}
+// func (p *EchoPayloadProcessor) Match(ast.Node) bool {
+	// return true
+// }
