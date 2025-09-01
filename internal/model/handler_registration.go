@@ -24,19 +24,19 @@ type HandlerRegistration struct {
 	ReturnResponse []*ReturnResponse
 }
 
-func (n *HandlerRegistration) Print() {
-	fmt.Println(">>>>>>")
-	if n.IsDirect {
-		method := n.Call.Fun.(*ast.SelectorExpr)
-		pathArg := n.Call.Args[0].(*ast.BasicLit)
-		fullpath := `"` + n.BasePath + strings.Trim(pathArg.Value, `"`) + `"`
-		fmt.Printf("%s.%s(%s,%s)\n", method.X, method.Sel.Name, fullpath, n.Func.Name())
-	} else {
-		method := n.Call.Fun.(*ast.Ident)
-		fmt.Printf("%s(%v)\n", method.String(), n.Call.Args)
-	}
-	fmt.Println()
-}
+// func (n *HandlerRegistration) Print() {
+// 	fmt.Println(">>>>>>")
+// 	if n.IsDirect {
+// 		method := n.Call.Fun.(*ast.SelectorExpr)
+// 		pathArg := n.Call.Args[0].(*ast.BasicLit)
+// 		fullpath := `"` + n.BasePath + strings.Trim(pathArg.Value, `"`) + `"`
+// 		fmt.Printf("%s.%s(%s,%s)\n", method.X, method.Sel.Name, fullpath, n.Func.Name())
+// 	} else {
+// 		method := n.Call.Fun.(*ast.Ident)
+// 		fmt.Printf("%s(%v)\n", method.String(), n.Call.Args)
+// 	}
+// 	fmt.Println()
+// }
 
 func (n *HandlerRegistration) GetFuncName() string {
 	return n.Func.Name()

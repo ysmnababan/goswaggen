@@ -49,14 +49,10 @@ var generateCmd = &cobra.Command{
 func Generate(payload GeneratePayload) error {
 	parser, err := parser.NewParser(payload.root, &payload.config)
 	if err != nil {
-		// fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
-		// os.Exit(1)
 		return err
 	}
 	handlerReg, err := parser.ExtractFuncHandlerInfo(payload.targetFunc)
 	if err != nil {
-		// fmt.Fprintf(os.Stderr, "%v\n", err)
-		// os.Exit(1)
 		return err
 	}
 
@@ -67,8 +63,6 @@ func Generate(payload GeneratePayload) error {
 		inject := injector.NewInjector(handlerReg.Pkg.Fset, handlerReg.File, handlerReg.FuncDecl)
 		err := inject.InjectComment(cmt, payload.srcFile)
 		if err != nil {
-			// fmt.Fprintf(os.Stderr, "%v\n", err)
-			// os.Exit(1)
 			return err
 		}
 	} else {
