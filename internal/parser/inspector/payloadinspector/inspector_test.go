@@ -330,3 +330,152 @@ func TestProcess_StandardResponse_QueryParam(t *testing.T) {
 		)
 	}
 }
+
+func TestProcess_StandardResponse_Param(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/pkg"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.POST("/test", pkg.Login)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package pkg
+
+	import (
+		"basicapi/response"
+		"fmt"
+
+		"github.com/labstack/echo/v4"
+	)
+	var VARKEY string = "var-key"
+
+	const CONSTKEY string = "const-key"
+	type UserCreateRequest struct {
+	Name        string            ` + "`json:\"name\" validate:\"required\"`" + `     // basic
+	Email       string            ` + "`json:\"email\" validate:\"required\"`" + `    // basic
+	Password    string            ` + "`json:\"password\" validate:\"required\"`" + ` // basic
+	Birthdate   *string           ` + "`json:\"birthdate\"`" + `                    // pointer to basic
+	}
+	type Response struct {
+	}
+
+	func Login(c echo.Context) error {
+		req := &UserCreateRequest{}
+		err := c.Bind(req)
+		if err != nil {
+			return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
+		}
+
+		req.Email = "emailz"
+		key := "some-key"
+		t := c
+		t.Param(CONSTKEY)
+		t.Param(VARKEY)
+		date := t.Param(key)
+		t.Param(req.Email)
+
+		// test for collect assigned string
+		test1 := "test1"
+		c.Param(test1)
+		var test2 = "test2"
+		c.Param(test2)
+		var test3 string = "not test 3"
+		test3 = "test3"
+		c.Param(test3)
+		const test4 = "test4"
+		c.Param(test4)
+
+		testReq5 := UserCreateRequest{
+			Email: "test5",
+		}
+		c.Param(testReq5.Email)
+
+		testReq6 := UserCreateRequest{}
+		testReq6.Email = "test6"
+		c.Param(testReq6.Email)
+		test7 := "test7"
+		testReq7 := UserCreateRequest{}
+		testReq7.Email = test7
+		c.Param(testReq7.Email)
+		_ = date
+
+		err = c.Validate(req)
+		if err != nil {
+			return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
+		}
+		res := Response{}
+		return c.JSON(400, res)
+	}
+`
+	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
+	require.NoError(t, err)
+
+	pkgs, err := tmp.BuildPackages()
+	require.NoError(t, err)
+	mainFuncDecl, _ := helper.SearchDeclFun(pkgs, "main", &helper.MAIN_PACKAGE_NAME)
+	require.NotNil(t, mainFuncDecl)
+	ctx := context.NewRegistrationContext(pkgs, mainFuncDecl)
+	handlers := tracking.FindHandlerRegistration(ctx)
+	require.Equal(t, 1, len(handlers))
+
+	handlerCtx := context.HandlerContext{
+		RegCtx:             ctx,
+		RegisteredHandler:  handlers[0],
+		ExistingVarMap:     make(map[*types.Var]bool),
+		ResolvedAssignExpr: make(map[string]string),
+	}
+
+	// execute
+	pi := NewPayloadInspector(handlerCtx)
+	ast.Inspect(handlers[0].FuncDecl, func(n ast.Node) bool {
+		pi.Inspect(n)
+		return true
+	})
+	results := pi.Results
+	pi.PrintResult()
+
+	// assert
+	want := []string{
+		"const-key",
+		"var-key",
+		"some-key",
+		"emailz",
+		"test1",
+		"test2",
+		"test3",
+		"test4",
+		"test5",
+		"test6",
+		"test7",
+	}
+	assert.Equal(t, 12, len(results))
+	assert.Equal(t, 4, len(results[0].FieldLists))
+	for i := 1; i < len(results); i++ {
+		assert.Equal(t,
+			fmt.Sprintf("%s(\"%s\")\n", "Param", want[i-1]),
+			fmt.Sprintf("%s(%s)\n", results[i].BindMethod, results[i].BasicLit),
+		)
+	}
+}
