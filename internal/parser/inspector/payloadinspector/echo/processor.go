@@ -450,6 +450,7 @@ func (p *EchoPayloadProcessor) resolveParam(argExp *ast.Expr) (*model.PayloadInf
 		return nil, false
 	}
 }
+
 func (p *EchoPayloadProcessor) extractPayloadRequest(callExpr *ast.CallExpr) (*model.PayloadInfo, bool) {
 	if len(callExpr.Args) != 1 {
 		return nil, false
@@ -489,11 +490,13 @@ func (p *EchoPayloadProcessor) extractPayloadRequest(callExpr *ast.CallExpr) (*m
 		if !ok {
 			return nil, false
 		}
+		reqData.ParamTypes = "string"
 	case "Param":
 		reqData, ok = p.resolveParam(&argExp)
 		if !ok {
 			return nil, false
 		}
+		reqData.ParamTypes = "string"
 	default:
 		return nil, false
 	}

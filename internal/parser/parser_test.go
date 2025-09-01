@@ -514,10 +514,10 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 	assert.Equal(t, "password", f[1].Tag["json"])
 	assert.Equal(t, "required", f[1].Tag["validate"])
 
-	assert.Equal(t, "\"id\"", pi[1].BasicLit)
+	assert.Equal(t, "id", pi[1].BasicLit)
 	assert.Equal(t, "Param", pi[1].BindMethod)
 	assert.Equal(t, 0, len(pi[1].FieldLists))
-	assert.Equal(t, "", pi[1].ParamTypes)
+	assert.Equal(t, "string", pi[1].ParamTypes)
 
 	//return
 	for _, o := range ri {

@@ -328,6 +328,7 @@ func TestProcess_StandardResponse_QueryParam(t *testing.T) {
 			fmt.Sprintf("%s(%s)\n", "QueryParam", want[i-1]),
 			fmt.Sprintf("%s(%s)\n", results[i].BindMethod, results[i].BasicLit),
 		)
+		assert.Equal(t, "string", results[i].ParamTypes)
 	}
 }
 
@@ -477,5 +478,6 @@ func TestProcess_StandardResponse_Param(t *testing.T) {
 			fmt.Sprintf("%s(%s)\n", "Param", want[i-1]),
 			fmt.Sprintf("%s(%s)\n", results[i].BindMethod, results[i].BasicLit),
 		)
+		assert.Equal(t, "string", results[i].ParamTypes)
 	}
 }
