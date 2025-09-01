@@ -98,7 +98,7 @@ func (g *generator) setDescription() {
 }
 
 func (g *generator) setTags() {
-	g.commentBlock.Tags = "// @Tags ______ "
+	g.commentBlock.Tags = "// @Tags ______"
 }
 
 func (g *generator) setAccept() {

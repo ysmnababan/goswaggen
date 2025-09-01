@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/ysmnababan/goswaggen/internal/generator"
@@ -66,11 +67,15 @@ func Generate(payload GeneratePayload) error {
 			return err
 		}
 	} else {
-		fmt.Print(`Copy this swagger comment to your code:
-// Swaggo comment block
+		// fmt.Print(`Copy this swagger comment to your code:
+		// Swaggo comment block
+		// `)
 
-`)
-		gen.PrintCommmentBlock()
+		// gen.PrintCommmentBlock()
+		fmt.Fprintf(payload.srcFile,
+			"Copy this swagger comment to your code: \n\n%v",
+			strings.Join(cmt, "\n"),
+		)
 	}
 	return nil
 }
