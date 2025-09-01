@@ -407,3 +407,130 @@ func TestGetHandlerByFuncName_DuplicateHandler(t *testing.T) {
 	assert.ErrorContains(t, err, "main.HandlerTest")
 	assert.ErrorContains(t, err, "lib.HandlerTest")
 }
+
+func TestExtractFuncHandlerInfo(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/pkg"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.PUT("/test/:id", pkg.Login)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package pkg
+
+	import (
+		"basicapi/response"
+		"fmt"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	type Response struct {
+		Token string
+		Name  string
+	}
+
+	type UserLoginRequest struct {
+		Email       string            ` + "`json:\"email\" validate:\"required\"`" + `    // basic
+		Password    string            ` + "`json:\"password\" validate:\"required\"`" + ` // basic
+	}
+
+	func Login(c echo.Context) error {
+		req := &UserLoginRequest{}
+		res := &Response{}
+		err := c.Bind(req)
+		if err != nil {
+			return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
+		}
+
+		err = c.Validate(req)
+		if err != nil {
+			return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
+		}
+		id := c.Param("id")
+		_ = id
+		return c.JSON(200, res)
+	}
+`
+	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
+	require.NoError(t, err)
+
+	p, err := NewParser(tmp.GetTempFile())
+	require.NoError(t, err)
+
+	// execute
+	h, err := p.ExtractFuncHandlerInfo("Login")
+	require.NoError(t, err)
+
+	// assert
+	assert.NotNil(t, h)
+	pi := h.GetPayloadInfos()
+	ri := h.GetReturnResponses()
+	assert.Equal(t, 2, len(pi))
+	assert.Equal(t, 3, len(ri))
+
+	assert.Equal(t, "PUT", h.GetMethod())
+	assert.Equal(t, "/test/:id", h.GetFullPath())
+	assert.Equal(t, "Login", h.GetFuncName())
+	// payload
+	assert.Equal(t, "", pi[0].BasicLit)
+	assert.Equal(t, "Bind", pi[0].BindMethod)
+	assert.Equal(t, 2, len(pi[0].FieldLists))
+	assert.Equal(t, "", pi[0].ParamTypes)
+	f := pi[0].FieldLists
+	assert.Equal(t, "Email", f[0].Name)
+	assert.Equal(t, false, f[0].IsPointer)
+	assert.NotNil(t, f[0].Tag)
+	assert.Equal(t, "string", f[0].VarType)
+	assert.Equal(t, "email", f[0].Tag["json"])
+	assert.Equal(t, "required", f[0].Tag["validate"])
+
+	assert.Equal(t, "Password", f[1].Name)
+	assert.Equal(t, false, f[1].IsPointer)
+	assert.NotNil(t, f[1].Tag)
+	assert.Equal(t, "string", f[1].VarType)
+	assert.Equal(t, "password", f[1].Tag["json"])
+	assert.Equal(t, "required", f[1].Tag["validate"])
+
+	assert.Equal(t, "\"id\"", pi[1].BasicLit)
+	assert.Equal(t, "Param", pi[1].BindMethod)
+	assert.Equal(t, 0, len(pi[1].FieldLists))
+	assert.Equal(t, "", pi[1].ParamTypes)
+
+	//return
+	for _, o := range ri {
+		assert.Equal(t, "{object}", o.SchemaType)
+		assert.Equal(t, "json", o.ProduceType)
+	}
+	assert.Equal(t, "response.APIResponse", ri[0].ReturnDataType)
+	assert.Equal(t, "response.APIResponse", ri[1].ReturnDataType)
+	assert.Equal(t, "pkg.Response", ri[2].ReturnDataType)
+	assert.Equal(t, 500, ri[0].StatusCode)
+	assert.Equal(t, 500, ri[1].StatusCode)
+	assert.Equal(t, 200, ri[2].StatusCode)
+	assert.Equal(t, false, ri[0].IsSuccess)
+	assert.Equal(t, false, ri[1].IsSuccess)
+	assert.Equal(t, true, ri[2].IsSuccess)
+}

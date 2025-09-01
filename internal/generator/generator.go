@@ -28,7 +28,7 @@ func NewGenerator(p Parser) *generator {
 		frameworkName: p.GetFrameworkName(),
 		path:          p.GetFullPath(),
 		payloads:      p.GetPayloadInfos(),
-		responses:     p.ReturnResponses(),
+		responses:     p.GetReturnResponses(),
 		commentBlock: &model.CommentBlock{
 			Params:   []string{},
 			Response: []string{},

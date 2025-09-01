@@ -68,6 +68,6 @@ func (n *HandlerRegistration) GetPayloadInfos() []*PayloadInfo {
 	return n.PayloadInfo
 }
 
-func (n *HandlerRegistration) ReturnResponses() []*ReturnResponse {
+func (n *HandlerRegistration) GetReturnResponses() []*ReturnResponse {
 	return n.ReturnResponse
 }

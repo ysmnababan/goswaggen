@@ -8,5 +8,5 @@ type Parser interface {
 	GetFrameworkName() string
 	GetFullPath() string
 	GetPayloadInfos() []*model.PayloadInfo
-	ReturnResponses() []*model.ReturnResponse
+	GetReturnResponses() []*model.ReturnResponse
 }

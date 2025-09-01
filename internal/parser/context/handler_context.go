@@ -20,10 +20,6 @@ func (c *HandlerContext) GetPackage() *packages.Package {
 	return c.RegisteredHandler.Pkg
 }
 
-func (c *HandlerContext) GetTypesInfo() *types.Info {
-	return c.RegisteredHandler.Pkg.TypesInfo
-}
-
 func (c *HandlerContext) GetTypeNameToGenDeclCache() map[*types.TypeName]*ast.GenDecl {
 	return c.RegCtx.typeVarToGenDeclMap
 }
