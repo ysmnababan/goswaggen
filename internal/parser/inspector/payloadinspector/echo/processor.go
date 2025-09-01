@@ -6,6 +6,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
@@ -510,11 +511,15 @@ func (p *EchoPayloadProcessor) Process(n ast.Node) *model.PayloadInfo {
 		if !ok {
 			return nil
 		}
+		if len(result.BasicLit) != 0 {
+			trimmed := strings.Trim(result.BasicLit, `"`)
+			result.BasicLit = trimmed
+		}
 		return result
 	}
 	return nil
 }
 
 // func (p *EchoPayloadProcessor) Match(ast.Node) bool {
-	// return true
+// return true
 // }

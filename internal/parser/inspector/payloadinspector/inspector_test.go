@@ -325,7 +325,7 @@ func TestProcess_StandardResponse_QueryParam(t *testing.T) {
 	assert.Equal(t, 4, len(results[0].FieldLists))
 	for i := 1; i < len(results); i++ {
 		assert.Equal(t,
-			fmt.Sprintf("%s(\"%s\")\n", "QueryParam", want[i-1]),
+			fmt.Sprintf("%s(%s)\n", "QueryParam", want[i-1]),
 			fmt.Sprintf("%s(%s)\n", results[i].BindMethod, results[i].BasicLit),
 		)
 	}
@@ -474,7 +474,7 @@ func TestProcess_StandardResponse_Param(t *testing.T) {
 	assert.Equal(t, 4, len(results[0].FieldLists))
 	for i := 1; i < len(results); i++ {
 		assert.Equal(t,
-			fmt.Sprintf("%s(\"%s\")\n", "Param", want[i-1]),
+			fmt.Sprintf("%s(%s)\n", "Param", want[i-1]),
 			fmt.Sprintf("%s(%s)\n", results[i].BindMethod, results[i].BasicLit),
 		)
 	}

@@ -64,7 +64,7 @@ func TestSetAccept(t *testing.T) {
 		{
 			name:       "post",
 			method:     "POST",
-			BindMethod: "Bind,Query,Param",
+			BindMethod: "Bind,QueryParam,Param",
 
 			want: "json",
 		},
