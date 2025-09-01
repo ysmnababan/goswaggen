@@ -1,8 +1,11 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
@@ -76,17 +79,35 @@ func TestGenerate(t *testing.T) {
 `
 	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
 	require.NoError(t, err)
+	buf := new(bytes.Buffer)
 	err = Generate(
 		GeneratePayload{
 			root:        tmp.GetTempFile(),
 			targetFunc:  "Login",
-			shouldForce: false,
+			shouldForce: true,
 			config: model.Config{
 				DefaultSuccessResponse: "default.Success",
 				DefaultFailureResponse: "default.Failure",
 			},
-			srcFile: nil,
+			srcFile: buf,
 		},
 	)
 	require.NoError(t, err)
+	want := `
+// @Summary Login
+// @Description Login
+// @Tags ______
+// @Accept json
+// @Produce json
+// @Param req body pkg.UserLoginRequest true "change this description"
+// @Param id path string true "change this description"
+// @Success 200 {object} pkg.Response "success"
+// @Failure 500 {object} default.Failure "error"
+// @Failure 400 {object} default.Failure "error"
+// @Failure 404 {object} default.Failure "error"
+// @Router /test/{id} [put]
+`
+	got := buf.String()
+	assert.Contains(t, got, want)
+	fmt.Println(got)
 }

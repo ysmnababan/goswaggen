@@ -63,11 +63,12 @@ func (g *generator) CreateCommentBlock() []string {
 	if len(cb.Response) != 0 {
 		out = append(out, cb.Response...)
 	}
+	out = append(out, cb.Router)
 	return out
 }
 
 func (g *generator) setSummary() {
-	g.commentBlock.Summary = fmt.Sprintf("// @Summary  %s", g.funcName)
+	g.commentBlock.Summary = fmt.Sprintf("// @Summary %s", g.funcName)
 }
 
 func camelCaseToTitle(input string) string {
@@ -232,6 +233,7 @@ func processResponse(r *model.ReturnResponse) string {
 }
 
 func (g *generator) setResponse() {
+	fmt.Println(g.responses)
 	existingResp := make(map[string]bool)
 
 	// the response block at least has these response,
@@ -242,7 +244,8 @@ func (g *generator) setResponse() {
 		"// @Failure 404": false,
 		"// @Failure 500": false,
 	}
-
+	errResp := []string{}
+	successResp := []string{}
 	for _, r := range g.responses {
 		result := processResponse(r)
 		_, ok := existingResp[result]
@@ -250,16 +253,21 @@ func (g *generator) setResponse() {
 			// handle duplicate
 			continue
 		}
+		existingResp[result] = true
 		for k := range defaultResp {
 			if strings.Contains(result, k) {
 				defaultResp[k] = true
 			}
 		}
-		g.commentBlock.Response = append(g.commentBlock.Response, result)
+		if strings.Contains(result, "Success 200") {
+			successResp = append(successResp, result)
+		} else {
+			errResp = append(errResp, result)
+		}
+		// g.commentBlock.Response = append(g.commentBlock.Response, result)
 	}
-
-	defaultSuccess := " {object} " + g.config.DefaultSuccessResponse
-	defaultFailure := " {object} " + g.config.DefaultFailureResponse
+	defaultSuccess := " {object} " + g.config.DefaultSuccessResponse + " \"success\""
+	defaultFailure := " {object} " + g.config.DefaultFailureResponse + " \"error\""
 
 	// add default resp if not exist
 	for k, val := range defaultResp {
@@ -267,11 +275,13 @@ func (g *generator) setResponse() {
 			continue
 		}
 		if strings.Contains(k, "200") {
-			g.commentBlock.Response = append(g.commentBlock.Response, k+defaultSuccess)
+			successResp = append(successResp, k+defaultSuccess)
 		} else {
-			g.commentBlock.Response = append(g.commentBlock.Response, k+defaultFailure)
+			errResp = append(errResp, k+defaultFailure)
 		}
 	}
+	g.commentBlock.Response = append(g.commentBlock.Response, successResp...)
+	g.commentBlock.Response = append(g.commentBlock.Response, errResp...)
 }
 
 func (g *generator) setProduceType() {

@@ -62,7 +62,7 @@ func Generate(payload GeneratePayload) error {
 
 	gen := generator.NewGenerator(handlerReg, &payload.config)
 	cmt := gen.CreateCommentBlock()
-	if shouldForce {
+	if payload.shouldForce {
 		// TODO: Check the fset
 		inject := injector.NewInjector(handlerReg.Pkg.Fset, handlerReg.File, handlerReg.FuncDecl)
 		err := inject.InjectComment(cmt, payload.srcFile)
