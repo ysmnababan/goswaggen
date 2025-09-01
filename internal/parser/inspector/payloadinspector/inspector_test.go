@@ -5,6 +5,7 @@ import (
 	"go/types"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
@@ -12,7 +13,7 @@ import (
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
 
-func TestProcess_StandardResponse(t *testing.T) {
+func TestProcess_StandardResponse_Bind(t *testing.T) {
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
 		testutil.WithEchoAPIResponsePackage,
@@ -46,14 +47,34 @@ func TestProcess_StandardResponse(t *testing.T) {
 
 	import (
 		"basicapi/response"
+		"encoding/json"
 		"fmt"
 
 		"github.com/labstack/echo/v4"
 	)
-
+	type OtherReference struct {
+		ID   int
+		Code string
+	}
+	type Personal struct {
+		Age   int
+		Hobby *string
+	}
 	type UserLoginRequest struct {
-		Age int
-		Email string
+	Name        string            ` + "`json:\"name\" validate:\"required\"`" + `     // basic
+	Email       string            ` + "`json:\"email\" validate:\"required\"`" + `    // basic
+	Password    string            ` + "`json:\"password\" validate:\"required\"`" + ` // basic
+	Birthdate   *string           ` + "`json:\"birthdate\"`" + `                    // pointer to basic
+	Personal    Personal          // named struct
+	Metadata    map[string]string // map
+	Tags        []string          // slice
+	Scores      []int             // slice of int
+	Reference   *OtherReference   // pointer to named type
+	Misc        interface{}       // interface
+	Raw         json.RawMessage   // alias for []byte
+	Coordinates [2]float64        // array
+	Callback    func(int) error   // function
+	IsActive    bool              // basic
 	}
 	type Response struct {
 	}
@@ -90,10 +111,72 @@ func TestProcess_StandardResponse(t *testing.T) {
 		ExistingVarMap:     make(map[*types.Var]bool),
 		ResolvedAssignExpr: make(map[string]string),
 	}
+
+	// execute
 	pi := NewPayloadInspector(handlerCtx)
 	ast.Inspect(handlers[0].FuncDecl, func(n ast.Node) bool {
 		pi.Inspect(n)
 		return true
 	})
-	pi.PrintResult()
+	results := pi.Results
+
+	// assert
+	assert.Equal(t, 1, len(results))
+	f := results[0].FieldLists
+	assert.Equal(t, "Bind", results[0].BindMethod)
+	assert.Equal(t, "", results[0].BasicLit)
+	assert.Equal(t, "", results[0].ParamTypes)
+	assert.Equal(t, 9, len(f))
+
+	assert.Equal(t, "Name", f[0].Name)
+	assert.Equal(t, false, f[0].IsPointer)
+	assert.NotNil(t, f[0].Tag)
+	assert.Equal(t, "string", f[0].VarType)
+	assert.Equal(t, "name", f[0].Tag["json"])
+	assert.Equal(t, "required", f[0].Tag["validate"])
+
+	assert.Equal(t, "Email", f[1].Name)
+	assert.Equal(t, false, f[1].IsPointer)
+	assert.NotNil(t, f[1].Tag)
+	assert.Equal(t, "string", f[1].VarType)
+	assert.Equal(t, "email", f[1].Tag["json"])
+	assert.Equal(t, "required", f[1].Tag["validate"])
+
+	assert.Equal(t, "Password", f[2].Name)
+	assert.Equal(t, false, f[2].IsPointer)
+	assert.NotNil(t, f[2].Tag)
+	assert.Equal(t, "string", f[2].VarType)
+	assert.Equal(t, "password", f[2].Tag["json"])
+	assert.Equal(t, "required", f[2].Tag["validate"])
+
+	assert.Equal(t, "Birthdate", f[3].Name)
+	assert.Equal(t, true, f[3].IsPointer)
+	assert.NotNil(t, f[3].Tag)
+	assert.Equal(t, "string", f[3].VarType)
+	assert.Equal(t, "birthdate", f[3].Tag["json"])
+
+	assert.Equal(t, "Age", f[4].Name)
+	assert.Equal(t, false, f[4].IsPointer)
+	assert.Nil(t, f[4].Tag)
+	assert.Equal(t, "int", f[4].VarType)
+
+	assert.Equal(t, "Hobby", f[5].Name)
+	assert.Equal(t, true, f[5].IsPointer)
+	assert.Nil(t, f[5].Tag)
+	assert.Equal(t, "string", f[5].VarType)
+
+	assert.Equal(t, "ID", f[6].Name)
+	assert.Equal(t, false, f[6].IsPointer)
+	assert.Nil(t, f[6].Tag)
+	assert.Equal(t, "int", f[6].VarType)
+
+	assert.Equal(t, "Code", f[7].Name)
+	assert.Equal(t, false, f[7].IsPointer)
+	assert.Nil(t, f[7].Tag)
+	assert.Equal(t, "string", f[7].VarType)
+
+	assert.Equal(t, "IsActive", f[8].Name)
+	assert.Equal(t, false, f[8].IsPointer)
+	assert.Nil(t, f[8].Tag)
+	assert.Equal(t, "bool", f[8].VarType)
 }
