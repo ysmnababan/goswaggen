@@ -218,15 +218,11 @@ func processResponse(r *model.ReturnResponse) string {
 		prefix = "Success"
 		desc = DEFAULT_SUCCESS_RESPONSE_DESCRIPTION
 	}
-	schemeType, ok := GO_TO_SWAGGO_SCHEME_TYPES_MAP[strings.ToLower(r.ProduceType)]
-	if !ok {
-		schemeType = DEFAULT_RESPONSE_SCHEME_TYPE
-	}
 
 	out := fmt.Sprintf(RESPONSE_BLOCK_TEMPLATE,
 		prefix,
 		r.StatusCode,
-		schemeType,
+		r.SchemaType,
 		r.ReturnDataType,
 		desc,
 	)

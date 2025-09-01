@@ -6,7 +6,7 @@ var DEFAULT_BODY_DESCRIPTION = "\"change this description\""
 var DEFAULT_RESPONSE_SCHEME_TYPE = "object"
 var DEFAULT_FAILURE_RESPONSE_DESCRIPTION = "\"error\""
 var DEFAULT_SUCCESS_RESPONSE_DESCRIPTION = "\"success\""
-var RESPONSE_BLOCK_TEMPLATE = "// @%s %d {%s} %s %s"
+var RESPONSE_BLOCK_TEMPLATE = "// @%s %d %s %s %s"
 var GO_TO_SWAGGO_SCHEME_TYPES_MAP = map[string]string{
 	"bool":      "boolean",
 	"string":    "string",

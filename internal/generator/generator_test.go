@@ -509,6 +509,7 @@ func TestProcessResponse(t *testing.T) {
 			in: &model.ReturnResponse{
 				IsSuccess:      true,
 				ProduceType:    "json",
+				SchemaType:     "{object}",
 				StatusCode:     200,
 				ReturnDataType: "myPkg.MyStruct",
 			},
@@ -518,17 +519,19 @@ func TestProcessResponse(t *testing.T) {
 			name: "success string",
 			in: &model.ReturnResponse{
 				IsSuccess:      true,
-				ProduceType:    "string",
+				ProduceType:    "json",
+				SchemaType:     "{string}",
 				StatusCode:     200,
-				ReturnDataType: "myPkg.MyStruct",
+				ReturnDataType: "string",
 			},
-			want: "// @Success 200 {string} myPkg.MyStruct " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
+			want: "// @Success 200 {string} string " + DEFAULT_SUCCESS_RESPONSE_DESCRIPTION,
 		},
 		{
 			name: "success struct",
 			in: &model.ReturnResponse{
 				IsSuccess:      true,
 				ProduceType:    "struct",
+				SchemaType:     "{object}",
 				StatusCode:     200,
 				ReturnDataType: "myPkg.MyStruct",
 			},
@@ -538,11 +541,12 @@ func TestProcessResponse(t *testing.T) {
 			name: "failure float",
 			in: &model.ReturnResponse{
 				IsSuccess:      false,
-				ProduceType:    "float32",
+				ProduceType:    "json",
+				SchemaType:     "{number}",
 				StatusCode:     400,
-				ReturnDataType: "myPkg.MyStruct",
+				ReturnDataType: "float",
 			},
-			want: "// @Failure 400 {number} myPkg.MyStruct " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
+			want: "// @Failure 400 {number} float " + DEFAULT_FAILURE_RESPONSE_DESCRIPTION,
 		},
 	}
 
@@ -693,6 +697,7 @@ func TestPrintCommentBlock(t *testing.T) {
 				StatusCode:     200,
 				IsSuccess:      true,
 				ProduceType:    "json",
+				SchemaType:     "{object}",
 			},
 		},
 		commentBlock: &model.CommentBlock{},
