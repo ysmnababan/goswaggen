@@ -495,10 +495,10 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 	assert.Equal(t, "/test/:id", h.GetFullPath())
 	assert.Equal(t, "Login", h.GetFuncName())
 	// payload
-	assert.Equal(t, "", pi[0].BasicLit)
+	assert.Equal(t, "req", pi[0].BasicLit)
 	assert.Equal(t, "Bind", pi[0].BindMethod)
 	assert.Equal(t, 2, len(pi[0].FieldLists))
-	assert.Equal(t, "", pi[0].ParamTypes)
+	assert.Equal(t, "pkg.UserLoginRequest", pi[0].ParamTypes)
 	f := pi[0].FieldLists
 	assert.Equal(t, "Email", f[0].Name)
 	assert.Equal(t, false, f[0].IsPointer)

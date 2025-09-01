@@ -125,8 +125,8 @@ func TestProcess_StandardResponse_Bind(t *testing.T) {
 	assert.Equal(t, 1, len(results))
 	f := results[0].FieldLists
 	assert.Equal(t, "Bind", results[0].BindMethod)
-	assert.Equal(t, "", results[0].BasicLit)
-	assert.Equal(t, "", results[0].ParamTypes)
+	assert.Equal(t, "req", results[0].BasicLit)
+	assert.Equal(t, "pkg.UserLoginRequest", results[0].ParamTypes)
 	assert.Equal(t, 9, len(f))
 
 	assert.Equal(t, "Name", f[0].Name)

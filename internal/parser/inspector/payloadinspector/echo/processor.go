@@ -207,7 +207,6 @@ func (p *EchoPayloadProcessor) resolveBind(argExp *ast.Expr) (*model.PayloadInfo
 	default:
 		return nil, false
 	}
-
 	obj, ok := p.typesInfo.Uses[paramIdent]
 	if !ok {
 		return nil, false
@@ -235,6 +234,8 @@ func (p *EchoPayloadProcessor) resolveBind(argExp *ast.Expr) (*model.PayloadInfo
 	pType := typeName.Pkg()
 	fields := p.populateStructFields(pType, decl)
 	reqData.FieldLists = fields
+	reqData.BasicLit = paramIdent.String()
+	reqData.ParamTypes = fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
 	p.visitedVar[v] = true
 	return reqData, true
 }
