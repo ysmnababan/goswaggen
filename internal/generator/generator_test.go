@@ -701,6 +701,10 @@ func TestPrintCommentBlock(t *testing.T) {
 			},
 		},
 		commentBlock: &model.CommentBlock{},
+		config: &model.Config{
+			DefaultSuccessResponse: "default.Success",
+			DefaultFailureResponse: "default.Failure",
+		},
 	}
 	cb := g.CreateCommentBlock()
 	assert.NotNil(t, cb)

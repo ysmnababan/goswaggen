@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser"
 
 	"github.com/spf13/cobra"
@@ -18,7 +19,11 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")
 		root, _ := os.Getwd()
-		prsr, err := parser.NewParser(root)
+		respCfg := model.Config{
+			DefaultSuccessResponse: "default.Success",
+			DefaultFailureResponse: "default.Failure",
+		}
+		prsr, err := parser.NewParser(root, &respCfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)

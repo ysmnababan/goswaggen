@@ -19,9 +19,10 @@ type generator struct {
 	payloads      []*model.PayloadInfo
 	responses     []*model.ReturnResponse
 	commentBlock  *model.CommentBlock
+	config        *model.Config
 }
 
-func NewGenerator(p Parser) *generator {
+func NewGenerator(p Parser, cfg *model.Config) *generator {
 	return &generator{
 		funcName:      p.GetFuncName(),
 		method:        strings.ToUpper(p.GetMethod()),
@@ -33,6 +34,7 @@ func NewGenerator(p Parser) *generator {
 			Params:   []string{},
 			Response: []string{},
 		},
+		config: cfg,
 	}
 }
 
@@ -256,9 +258,8 @@ func (g *generator) setResponse() {
 		g.commentBlock.Response = append(g.commentBlock.Response, result)
 	}
 
-	// TODO: Update default value by config
-	defaultSuccess := " {object} default.Success"
-	defaultFailure := " {object} default.Failure"
+	defaultSuccess := " {object} " + g.config.DefaultSuccessResponse
+	defaultFailure := " {object} " + g.config.DefaultFailureResponse
 
 	// add default resp if not exist
 	for k, val := range defaultResp {

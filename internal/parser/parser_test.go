@@ -6,12 +6,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
 
 func TestGetAllHandlers(t *testing.T) {
-	t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
@@ -75,7 +75,7 @@ func TestGetAllHandlers(t *testing.T) {
 }
 
 func TestNewParser_Success(t *testing.T) {
-	t.Parallel()
+
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
@@ -124,7 +124,11 @@ func TestNewParser_Success(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	require.NoError(t, err)
 	// assert
 	assert.NotNil(t, parser.fset)
@@ -135,11 +139,14 @@ func TestNewParser_Success(t *testing.T) {
 }
 
 func TestNewParser_EmptyRoot(t *testing.T) {
-	t.Parallel()
 	root := ""
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 
 	assert.Equal(t, "root can't be empty", err.Error())
 	// assert
@@ -147,7 +154,7 @@ func TestNewParser_EmptyRoot(t *testing.T) {
 }
 
 func TestNewParser_WithVendorFileButNoGoFile(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
@@ -168,14 +175,18 @@ func TestNewParser_WithVendorFileButNoGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	// assert
 	assert.Equal(t, "no package found", err.Error())
 	assert.Nil(t, parser)
 }
 
 func TestNewParser_WithoutVendorFileAndNoGoFile(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
@@ -196,13 +207,17 @@ func TestNewParser_WithoutVendorFileAndNoGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	// assert
 	assert.Contains(t, err.Error(), "./...")
 	assert.Nil(t, parser)
 }
 func TestNewParser_WithoutVendorFileWithGoFile(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
@@ -247,14 +262,18 @@ func TestNewParser_WithoutVendorFileWithGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	// assert
 	assert.Contains(t, err.Error(), "does not contain main module")
 	assert.Nil(t, parser)
 }
 
 func TestNewParser_WithVendorFileAndGoFile(t *testing.T) {
-	t.Parallel()
+	// t.Parallel()
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
@@ -298,7 +317,11 @@ func TestNewParser_WithVendorFileAndGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	// assert
 	assert.Contains(t, err.Error(), "no main file found")
 	assert.Nil(t, parser)
@@ -332,7 +355,11 @@ func TestGetHandlerByFuncName_NoHandlerFound(t *testing.T) {
 	require.NoError(t, err)
 
 	root := tmp.GetTempFile()
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	require.NoError(t, err)
 
 	t.Run("without package name", func(t *testing.T) {
@@ -395,7 +422,11 @@ func TestGetHandlerByFuncName_DuplicateHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	root := tmp.GetTempFile()
-	parser, err := NewParser(root)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
 	require.NoError(t, err)
 
 	// execute
@@ -476,8 +507,11 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 `
 	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
 	require.NoError(t, err)
-
-	p, err := NewParser(tmp.GetTempFile())
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	p, err := NewParser(tmp.GetTempFile(), &respCfg)
 	require.NoError(t, err)
 
 	// execute
@@ -524,8 +558,8 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 		assert.Equal(t, "{object}", o.SchemaType)
 		assert.Equal(t, "json", o.ProduceType)
 	}
-	assert.Equal(t, "response.APIResponse", ri[0].ReturnDataType)
-	assert.Equal(t, "response.APIResponse", ri[1].ReturnDataType)
+	assert.Equal(t, "default.Failure", ri[0].ReturnDataType)
+	assert.Equal(t, "default.Failure", ri[1].ReturnDataType)
 	assert.Equal(t, "pkg.Response", ri[2].ReturnDataType)
 	assert.Equal(t, 500, ri[0].StatusCode)
 	assert.Equal(t, 500, ri[1].StatusCode)

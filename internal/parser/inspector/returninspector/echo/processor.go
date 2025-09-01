@@ -15,13 +15,15 @@ import (
 type EchoReturnProcessor struct {
 	typesInfo      *types.Info
 	visitedRetStmt map[*ast.ReturnStmt]bool
+	cfg            *model.Config
 }
 
-func NewReturnProcessor(ti *types.Info) *EchoReturnProcessor {
+func NewReturnProcessor(ti *types.Info, cfg *model.Config) *EchoReturnProcessor {
 	return &EchoReturnProcessor{
 		// typesInfo:      hc.GetTypesInfo(),
 		typesInfo:      ti,
 		visitedRetStmt: make(map[*ast.ReturnStmt]bool),
+		cfg:            cfg,
 	}
 }
 
@@ -201,11 +203,11 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 	if isErrorResponse {
 		result.IsSuccess = false
 		result.StatusCode = 500
-		result.ReturnDataType = "response.APIResponse" // TODO: change this from config
+		result.ReturnDataType = i.cfg.DefaultFailureResponse
 	} else {
 		result.IsSuccess = true
 		result.StatusCode = 200
-		result.ReturnDataType = "response.APIResponse" // TODO: change this from config
+		result.ReturnDataType = i.cfg.DefaultSuccessResponse
 	}
 	return &result
 }

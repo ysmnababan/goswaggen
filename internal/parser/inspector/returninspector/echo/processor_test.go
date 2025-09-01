@@ -626,11 +626,16 @@ func TestResolvePayloadType(t *testing.T) {
 // }
 
 func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
+	respCfg := model.Config{
+		DefaultSuccessResponse: "response.APIResponse",
+		DefaultFailureResponse: "response.APIResponse",
+	}
 	p := &EchoReturnProcessor{
 		typesInfo: &types.Info{
 			Types: make(map[ast.Expr]types.TypeAndValue),
 			Uses:  make(map[*ast.Ident]types.Object),
 		},
+		cfg: &respCfg,
 	}
 	pkg := types.NewPackage("myPkg", "myPkg")
 	tn := types.NewTypeName(0, pkg, "Wrap", nil)
@@ -693,11 +698,16 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 }
 
 func TestResolveReturnResponse_StandardResponse(t *testing.T) {
+	respCfg := model.Config{
+		DefaultSuccessResponse: "response.APIResponse",
+		DefaultFailureResponse: "response.APIResponse",
+	}
 	p := &EchoReturnProcessor{
 		typesInfo: &types.Info{
 			Types: make(map[ast.Expr]types.TypeAndValue),
 			Uses:  make(map[*ast.Ident]types.Object),
 		},
+		cfg: &respCfg,
 	}
 	echopkg := types.NewPackage("github.com/labstack/echo/v4", "echo")
 	echotypeName := types.NewTypeName(0, echopkg, "Context", nil)
@@ -879,7 +889,11 @@ func TestProcess_NonStandardResponse(t *testing.T) {
 		}
 	}
 	out := []*model.ReturnResponse{}
-	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "response.APIResponse",
+		DefaultFailureResponse: "response.APIResponse",
+	}
+	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo, &respCfg)
 	ast.Inspect(targetFunc, func(n ast.Node) bool {
 		if ret := returnProcessor.Process(n); ret != nil {
 			out = append(out, ret)
@@ -1035,7 +1049,11 @@ func TestProcess_StandardResponse(t *testing.T) {
 		}
 	}
 	out := []*model.ReturnResponse{}
-	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo)
+	respCfg := model.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	returnProcessor := NewReturnProcessor(mainPkg.TypesInfo, &respCfg)
 	ast.Inspect(targetFunc, func(n ast.Node) bool {
 		if ret := returnProcessor.Process(n); ret != nil {
 			out = append(out, ret)

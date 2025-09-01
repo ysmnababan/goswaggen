@@ -27,9 +27,10 @@ type parser struct {
 	pkgs         []*packages.Package
 	mainFuncDecl *ast.FuncDecl
 	ctx          *context.RegistrationContext
+	config       *model.Config
 }
 
-func NewParser(root string) (*parser, error) {
+func NewParser(root string, responseCfg *model.Config) (*parser, error) {
 	if root == "" {
 		return nil, fmt.Errorf("root can't be empty")
 	}
@@ -70,6 +71,7 @@ func NewParser(root string) (*parser, error) {
 		pkgs:         pkgs,
 		mainFuncDecl: mainFuncDecl,
 		ctx:          context.NewRegistrationContext(pkgs, mainFuncDecl),
+		config:       responseCfg,
 	}, nil
 }
 
@@ -141,7 +143,7 @@ func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration
 		ResolvedAssignExpr: make(map[string]string),
 	}
 
-	ri := returninspector.NewReturnInspector(handlerFunc.Pkg.TypesInfo)
+	ri := returninspector.NewReturnInspector(handlerFunc.Pkg.TypesInfo, p.config)
 	pi := payloadinspector.NewPayloadInspector(handlerCtx)
 	inspectorList := []inspector.Inspector{
 		ri, pi,

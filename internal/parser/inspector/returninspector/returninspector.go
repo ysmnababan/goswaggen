@@ -18,10 +18,10 @@ type ReturnInspector struct {
 	Results    []*model.ReturnResponse
 }
 
-func NewReturnInspector(ti *types.Info) *ReturnInspector {
+func NewReturnInspector(ti *types.Info, cfg *model.Config) *ReturnInspector {
 	return &ReturnInspector{
 		Results:    []*model.ReturnResponse{},
-		processors: Register(ti),
+		processors: Register(ti, cfg),
 	}
 }
 
