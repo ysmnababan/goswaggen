@@ -32,13 +32,10 @@ DEVELOPMENT STAGE:Analyze all the relevant information before generating comment
 - [X] Create unit test for the parser
 - [X] Refactor 
 - [X] Paired the function declaration with the comment block
-- [ ] `Bind` must support the `array` types
+- [X] `Bind` must support the `array` types
 
 DEVELOPMENT STAGE: Generating Comment
 - [X] Look up what param need to cover
-- [ ] Learn how to update the comment without changing important field
-
-
 
 DEVELOPMENT STAGE: Rewriting the Comment
 - [X] Learn how to insert comment to existing file
@@ -48,14 +45,20 @@ DEVELOPMENT STAGE: Rewriting the Comment
 TOOLING: reading the from cli
 - [X] Explore how to build golang cli tools
 - [X] Add function to list all the function
-- [ ] Notify user if it duplicate handler function
-- [ ] Add function to generate template `config` file
-- [ ] Read config file
+- [X] Notify user if it duplicate handler function
+- [X] Add function to generate template `config` file
+- [X] Read config file
 
 GENERAL:
 - [X] Adding command line capability
-- [ ] Assembly each part
-- [ ] Add unit test for each function
+- [X] Assembly each part
+- [X] Add unit test for each function
+- [X] Learn how to sync to the latest update
+- [ ] Test `gen` command
+- [ ] Create `readme` for installing and using
+- [ ] Add `CI` for testing
+- [ ] Add `CD` for building the app
+- [ ] Add `docs` containing design-decisions, faq, and internals
 
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
@@ -63,3 +66,4 @@ IMPROVEMENT:
 - [ ] Add security when releasing the artifacts (checksum and gpg)
 - [ ] Cover duplicate handler (same package and name, but different filepath)
 - [ ] Failed test because of timeout
+- [ ] Learn how to update the comment without changing important field
