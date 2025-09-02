@@ -19,11 +19,8 @@ var listCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")
 		root, _ := os.Getwd()
-		respCfg := model.Config{
-			DefaultSuccessResponse: "default.Success",
-			DefaultFailureResponse: "default.Failure",
-		}
-		prsr, err := parser.NewParser(root, &respCfg)
+		// test := filepath.Join(root, "experiment", "example", "learn-go", "internal")
+		prsr, err := parser.NewParser(root, &model.Cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)
@@ -32,7 +29,7 @@ var listCmd = &cobra.Command{
 		for p, funcs := range c {
 			fmt.Println(p, ":")
 			for _, f := range *funcs {
-				fmt.Println("	", f)
+				fmt.Println("  ", f)
 			}
 			fmt.Println()
 		}

@@ -11,7 +11,7 @@ import (
 
 var YamlConfigTemplate string = `error_response: "default.Error"
 success_response: "default.Success"`
-var YamlConfigName string = "swaggo_conf.yaml"
+var YamlConfigName string = "goswaggen.yaml"
 var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
