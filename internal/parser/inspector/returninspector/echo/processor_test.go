@@ -12,6 +12,7 @@ import (
 
 	"github.com/ysmnababan/goswaggen/internal/fileutil"
 	"github.com/ysmnababan/goswaggen/internal/model"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 
@@ -626,7 +627,7 @@ func TestResolvePayloadType(t *testing.T) {
 // }
 
 func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "response.APIResponse",
 		DefaultFailureResponse: "response.APIResponse",
 	}
@@ -698,7 +699,7 @@ func TestResolveReturnResponse_NotStandardResponse(t *testing.T) {
 }
 
 func TestResolveReturnResponse_StandardResponse(t *testing.T) {
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "response.APIResponse",
 		DefaultFailureResponse: "response.APIResponse",
 	}
@@ -889,7 +890,7 @@ func TestProcess_NonStandardResponse(t *testing.T) {
 		}
 	}
 	out := []*model.ReturnResponse{}
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "response.APIResponse",
 		DefaultFailureResponse: "response.APIResponse",
 	}
@@ -1049,7 +1050,7 @@ func TestProcess_StandardResponse(t *testing.T) {
 		}
 	}
 	out := []*model.ReturnResponse{}
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}

@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/generator"
 	"github.com/ysmnababan/goswaggen/internal/injector"
-	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser"
 )
 
@@ -20,7 +20,7 @@ type GeneratePayload struct {
 	targetFunc  string
 	srcFile     io.Writer
 	shouldForce bool
-	config      model.Config
+	config      *config.Config
 }
 
 var generateCmd = &cobra.Command{
@@ -37,7 +37,7 @@ var generateCmd = &cobra.Command{
 			targetFunc:  targetFunc,
 			srcFile:     os.Stdout,
 			shouldForce: shouldForce,
-			config:      model.Cfg,
+			config:      config.Cfg,
 		}
 		err := Generate(payload)
 		if err != nil {
@@ -48,7 +48,7 @@ var generateCmd = &cobra.Command{
 }
 
 func Generate(payload GeneratePayload) error {
-	parser, err := parser.NewParser(payload.root, &payload.config)
+	parser, err := parser.NewParser(payload.root, payload.config)
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ func Generate(payload GeneratePayload) error {
 		return err
 	}
 
-	gen := generator.NewGenerator(handlerReg, &payload.config)
+	gen := generator.NewGenerator(handlerReg, payload.config)
 	cmt := gen.CreateCommentBlock()
 	if payload.shouldForce {
 		// TODO: Check the fset

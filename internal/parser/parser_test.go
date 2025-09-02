@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ysmnababan/goswaggen/internal/model"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
@@ -124,7 +124,7 @@ func TestNewParser_Success(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -142,7 +142,7 @@ func TestNewParser_EmptyRoot(t *testing.T) {
 	root := ""
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -175,7 +175,7 @@ func TestNewParser_WithVendorFileButNoGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -207,7 +207,7 @@ func TestNewParser_WithoutVendorFileAndNoGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -262,7 +262,7 @@ func TestNewParser_WithoutVendorFileWithGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -317,7 +317,7 @@ func TestNewParser_WithVendorFileAndGoFile(t *testing.T) {
 	root := tmp.GetTempFile()
 
 	// execute
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -355,7 +355,7 @@ func TestGetHandlerByFuncName_NoHandlerFound(t *testing.T) {
 	require.NoError(t, err)
 
 	root := tmp.GetTempFile()
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -422,7 +422,7 @@ func TestGetHandlerByFuncName_DuplicateHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	root := tmp.GetTempFile()
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}
@@ -507,7 +507,7 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 `
 	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
 	require.NoError(t, err)
-	respCfg := model.Config{
+	respCfg := config.Config{
 		DefaultSuccessResponse: "default.Success",
 		DefaultFailureResponse: "default.Failure",
 	}

@@ -8,6 +8,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/framework"
 )
@@ -15,10 +16,10 @@ import (
 type EchoReturnProcessor struct {
 	typesInfo      *types.Info
 	visitedRetStmt map[*ast.ReturnStmt]bool
-	cfg            *model.Config
+	cfg            *config.Config
 }
 
-func NewReturnProcessor(ti *types.Info, cfg *model.Config) *EchoReturnProcessor {
+func NewReturnProcessor(ti *types.Info, cfg *config.Config) *EchoReturnProcessor {
 	return &EchoReturnProcessor{
 		// typesInfo:      hc.GetTypesInfo(),
 		typesInfo:      ti,

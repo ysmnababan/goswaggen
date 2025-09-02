@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -19,10 +20,10 @@ type generator struct {
 	payloads      []*model.PayloadInfo
 	responses     []*model.ReturnResponse
 	commentBlock  *model.CommentBlock
-	config        *model.Config
+	config        *config.Config
 }
 
-func NewGenerator(p Parser, cfg *model.Config) *generator {
+func NewGenerator(p Parser, cfg *config.Config) *generator {
 	return &generator{
 		funcName:      p.GetFuncName(),
 		method:        strings.ToUpper(p.GetMethod()),

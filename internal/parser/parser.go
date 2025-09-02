@@ -7,6 +7,7 @@ import (
 	"go/types"
 	"strings"
 
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/model"
 	"github.com/ysmnababan/goswaggen/internal/parser/context"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
@@ -27,10 +28,10 @@ type parser struct {
 	pkgs         []*packages.Package
 	mainFuncDecl *ast.FuncDecl
 	ctx          *context.RegistrationContext
-	config       *model.Config
+	config       *config.Config
 }
 
-func NewParser(root string, responseCfg *model.Config) (*parser, error) {
+func NewParser(root string, responseCfg *config.Config) (*parser, error) {
 	if root == "" {
 		return nil, fmt.Errorf("root can't be empty")
 	}

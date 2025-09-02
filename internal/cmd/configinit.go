@@ -7,11 +7,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/ysmnababan/goswaggen/internal/config"
 )
 
-var YamlConfigTemplate string = `error_response: "default.Error"
-success_response: "default.Success"`
-var YamlConfigName string = "goswaggen.yaml"
 var initCmd = &cobra.Command{
 	Use:     "init",
 	Aliases: []string{"i"},
@@ -19,7 +17,7 @@ var initCmd = &cobra.Command{
 	Long:    "Initialize a config file for customization",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		f, err := os.Create(YamlConfigName)
+		f, err := os.Create(config.YamlConfigName)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error while generating config file: %v\n", err)
 			os.Exit(1)
@@ -35,7 +33,7 @@ var initCmd = &cobra.Command{
 
 func InitConfig(out io.Writer) error {
 	w := bufio.NewWriter(out)
-	_, err := w.WriteString(YamlConfigTemplate)
+	_, err := w.WriteString(config.YamlConfigTemplate)
 	if err != nil {
 		return err
 	}

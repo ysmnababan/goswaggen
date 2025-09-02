@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ysmnababan/goswaggen/internal/model"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/parser"
 
 	"github.com/spf13/cobra"
@@ -20,7 +20,7 @@ var listCmd = &cobra.Command{
 		fmt.Println("All Controllers")
 		root, _ := os.Getwd()
 		// test := filepath.Join(root, "experiment", "example", "learn-go", "internal")
-		prsr, err := parser.NewParser(root, &model.Cfg)
+		prsr, err := parser.NewParser(root, config.Cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while create parser: %v\n", err)
 			os.Exit(1)

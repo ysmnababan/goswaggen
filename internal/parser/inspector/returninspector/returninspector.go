@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/types"
 
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/model"
 )
 
@@ -18,7 +19,7 @@ type ReturnInspector struct {
 	Results    []*model.ReturnResponse
 }
 
-func NewReturnInspector(ti *types.Info, cfg *model.Config) *ReturnInspector {
+func NewReturnInspector(ti *types.Info, cfg *config.Config) *ReturnInspector {
 	return &ReturnInspector{
 		Results:    []*model.ReturnResponse{},
 		processors: Register(ti, cfg),

@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/ysmnababan/goswaggen/internal/model"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 )
 
@@ -85,7 +85,7 @@ func TestGenerate_WithInjector(t *testing.T) {
 			root:        tmp.GetTempFile(),
 			targetFunc:  "Login",
 			shouldForce: true,
-			config: model.Config{
+			config: &config.Config{
 				DefaultSuccessResponse: "default.Success",
 				DefaultFailureResponse: "default.Failure",
 			},
@@ -111,7 +111,6 @@ func TestGenerate_WithInjector(t *testing.T) {
 	assert.Contains(t, got, want)
 	fmt.Println(got)
 }
-
 
 func TestGenerate(t *testing.T) {
 	tmp, err := testutil.NewTemporaryTestFile(
@@ -187,7 +186,7 @@ func TestGenerate(t *testing.T) {
 			root:        tmp.GetTempFile(),
 			targetFunc:  "Login",
 			shouldForce: false,
-			config: model.Config{
+			config: &config.Config{
 				DefaultSuccessResponse: "default.Success",
 				DefaultFailureResponse: "default.Failure",
 			},

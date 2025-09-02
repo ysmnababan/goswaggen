@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/model"
 )
 
@@ -701,7 +702,7 @@ func TestPrintCommentBlock(t *testing.T) {
 			},
 		},
 		commentBlock: &model.CommentBlock{},
-		config: &model.Config{
+		config: &config.Config{
 			DefaultSuccessResponse: "default.Success",
 			DefaultFailureResponse: "default.Failure",
 		},
