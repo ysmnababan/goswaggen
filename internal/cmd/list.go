@@ -13,8 +13,8 @@ import (
 var listCmd = &cobra.Command{
 	Use:     "list",
 	Aliases: []string{"l"},
-	Short:   "controller lists",
-	Long:    "list all the controller grouped by its package",
+	Short:   "Controller lists",
+	Long:    "List all the controller grouped by its package",
 	Args:    cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("All Controllers")

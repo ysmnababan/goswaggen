@@ -8,11 +8,11 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "gocli",
-	Short: "gocli is a cli tool for testing cobra",
-	Long:  "gocli is a cli tool for testing coba. This is a experiment for the goswaggen project",
+	Use:   "goswaggen",
+	Short: "Goswaggen is a cli tool for generating handler comment block",
+	Long:  "Goswaggen is a command-line tool that helps you automatically generate Swagger (OpenAPI) comment annotations for your Go HTTP handlers.",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		_ = cmd.Help()
 	},
 }
 
