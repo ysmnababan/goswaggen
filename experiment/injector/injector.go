@@ -31,19 +31,27 @@ func (i *injector) InsertToCommentGroup(cg *ast.CommentGroup) {
 		i.file.Comments = append(i.file.Comments, cg)
 		return
 	}
-	out := make([]*ast.CommentGroup, 0, 1+len(i.file.Comments))
 	funcLinePos := i.fset.Position(i.funcAst.Pos()).Line
 
-	inserted := false
-	for _, c := range i.file.Comments {
-		cLinePos := i.fset.Position(c.End()).Line + 1
-		if !inserted && cLinePos >= funcLinePos {
-			out = append(out, cg)
-			inserted = true
+	found := false
+	iter := 0
+	for iter < len(i.file.Comments) && !found {
+		cLinePos := i.fset.Position(i.file.Comments[iter].End()).Line + 1
+		fmt.Println(cLinePos)
+		if cLinePos > funcLinePos {
+			found = true
+			break
 		}
-		out = append(out, c)
+		iter++
 	}
-
+	fmt.Println("iter",iter)
+	if !found {
+		i.file.Comments = append(i.file.Comments, cg)
+		return
+	}
+	out := append([]*ast.CommentGroup{}, i.file.Comments[:iter]...)
+	out = append(out, cg)
+	out = append(out, i.file.Comments[iter:]...)
 	i.file.Comments = out
 }
 
