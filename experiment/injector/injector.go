@@ -25,6 +25,28 @@ func NewInjector(fset *token.FileSet, f *ast.File, fun *ast.FuncDecl) *injector 
 		funcAst: fun,
 	}
 }
+
+func (i *injector) InsertToCommentGroup(cg *ast.CommentGroup) {
+	if len(i.file.Comments) == 0 {
+		i.file.Comments = append(i.file.Comments, cg)
+		return
+	}
+	out := make([]*ast.CommentGroup, 0, 1+len(i.file.Comments))
+	funcLinePos := i.fset.Position(i.funcAst.Pos()).Line
+
+	inserted := false
+	for _, c := range i.file.Comments {
+		cLinePos := i.fset.Position(c.End()).Line + 1
+		if !inserted && cLinePos >= funcLinePos {
+			out = append(out, cg)
+			inserted = true
+		}
+		out = append(out, c)
+	}
+
+	i.file.Comments = out
+}
+
 func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 	if len(comments) == 0 {
 		return errors.New("comments can't be empty")
@@ -32,7 +54,6 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 	astComments := createASTComment(comments, i.funcAst.Pos())
 	if i.funcAst.Doc == nil {
 		// insert new comment
-
 		blank := &ast.Comment{
 			Text:  "//",
 			Slash: token.Pos(i.funcAst.Pos() - 1),
@@ -41,7 +62,7 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 		newCommentGroup := &ast.CommentGroup{
 			List: newList,
 		}
-		i.file.Comments = append(i.file.Comments, newCommentGroup)
+		i.InsertToCommentGroup(newCommentGroup)
 	} else {
 		i.funcAst.Doc.List = astComments
 	}

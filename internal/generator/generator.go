@@ -234,7 +234,7 @@ func processResponse(r *model.ReturnResponse) string {
 }
 
 func (g *generator) setResponse() {
-	fmt.Println(g.responses)
+	// fmt.Println(g.responses)
 	existingResp := make(map[string]bool)
 
 	// the response block at least has these response,
