@@ -118,7 +118,7 @@ func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, 
 	}
 
 	if len(out) == 0 {
-		return nil, fmt.Errorf("no handler found ... ")
+		return nil, fmt.Errorf("no handler found for '%s'... ", name)
 	}
 
 	if len(out) != 1 {
