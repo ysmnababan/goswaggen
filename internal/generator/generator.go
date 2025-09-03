@@ -239,6 +239,13 @@ func (g *generator) setResponse() {
 
 	// the response block at least has these response,
 	// if not exist, add default resp
+	// instead of relying only on map iteration, keep order in a slice
+	defaultRespKeys := []string{
+		"// @Success 200",
+		"// @Failure 400",
+		"// @Failure 404",
+		"// @Failure 500",
+	}
 	defaultResp := map[string]bool{
 		"// @Success 200": false,
 		"// @Failure 400": false,
@@ -271,14 +278,14 @@ func (g *generator) setResponse() {
 	defaultFailure := " {object} " + g.config.DefaultFailureResponse + " \"error\""
 
 	// add default resp if not exist
-	for k, val := range defaultResp {
-		if val {
+	for _, val := range defaultRespKeys {
+		if defaultResp[val] {
 			continue
 		}
-		if strings.Contains(k, "200") {
-			successResp = append(successResp, k+defaultSuccess)
+		if strings.Contains(val, "200") {
+			successResp = append(successResp, val+defaultSuccess)
 		} else {
-			errResp = append(errResp, k+defaultFailure)
+			errResp = append(errResp, val+defaultFailure)
 		}
 	}
 	g.commentBlock.Response = append(g.commentBlock.Response, successResp...)
