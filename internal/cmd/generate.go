@@ -35,9 +35,11 @@ var generateCmd = &cobra.Command{
 		payload := GeneratePayload{
 			root:        root,
 			targetFunc:  targetFunc,
-			srcFile:     os.Stdout,
 			shouldForce: shouldForce,
 			config:      config.Cfg,
+		}
+		if !shouldForce {
+			payload.srcFile = os.Stdout
 		}
 		err := Generate(payload)
 		if err != nil {
@@ -60,18 +62,20 @@ func Generate(payload GeneratePayload) error {
 	gen := generator.NewGenerator(handlerReg, payload.config)
 	cmt := gen.CreateCommentBlock()
 	if payload.shouldForce {
-		// TODO: Check the fset
 		inject := injector.NewInjector(handlerReg.Pkg.Fset, handlerReg.File, handlerReg.FuncDecl)
-		err := inject.InjectComment(cmt, payload.srcFile)
+		fileToken := handlerReg.Pkg.Fset.File(handlerReg.File.Pos())
+		f, err := os.Create(fileToken.Name())
+		if err != nil {
+			return err
+		}
+		defer func() {
+			_ = f.Close()
+		}()
+		err = inject.InjectComment(cmt, f)
 		if err != nil {
 			return err
 		}
 	} else {
-		// fmt.Print(`Copy this swagger comment to your code:
-		// Swaggo comment block
-		// `)
-
-		// gen.PrintCommmentBlock()
 		fmt.Fprintf(payload.srcFile,
 			"Copy this swagger comment to your code: \n\n%v",
 			strings.Join(cmt, "\n"),

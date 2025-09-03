@@ -3,6 +3,8 @@ package cmd
 import (
 	"bytes"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -79,21 +81,29 @@ func TestGenerate_WithInjector(t *testing.T) {
 `
 	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
 	require.NoError(t, err)
-	buf := new(bytes.Buffer)
-	err = Generate(
-		GeneratePayload{
-			root:        tmp.GetTempFile(),
-			targetFunc:  "Login",
-			shouldForce: true,
-			config: &config.Config{
-				DefaultSuccessResponse: "default.Success",
-				DefaultFailureResponse: "default.Failure",
+	root := tmp.GetTempFile()
+
+	// execute
+	t.Run("success search login", func(t *testing.T) {
+
+		err = Generate(
+			GeneratePayload{
+				root:        root,
+				targetFunc:  "Login",
+				shouldForce: true,
+				config: &config.Config{
+					DefaultSuccessResponse: "default.Success",
+					DefaultFailureResponse: "default.Failure",
+				},
 			},
-			srcFile: buf,
-		},
-	)
-	require.NoError(t, err)
-	want := `
+		)
+		require.NoError(t, err)
+		// assert
+		target := filepath.Join(root, "pkg", "pkg.go")
+		fmt.Println(target)
+		gotBytes, err := os.ReadFile(target)
+		require.NoError(t, err)
+		want := `
 // @Summary Login
 // @Description Login
 // @Tags ______
@@ -107,9 +117,10 @@ func TestGenerate_WithInjector(t *testing.T) {
 // @Failure 404 {object} default.Failure "error"
 // @Router /test/{id} [put]
 `
-	got := buf.String()
-	assert.Contains(t, got, want)
-	fmt.Println(got)
+		got := string(gotBytes)
+		assert.Contains(t, got, want)
+		fmt.Println(got)
+	})
 }
 
 func TestGenerate(t *testing.T) {
