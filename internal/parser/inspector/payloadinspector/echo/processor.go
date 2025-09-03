@@ -51,8 +51,11 @@ func (p *EchoPayloadProcessor) UpdateCacheFromDeclStmt(n *ast.DeclStmt) {
 	if !ok {
 		return
 	}
-
 	key := valueSpec.Names[0].Name
+	if len(valueSpec.Values) == 0 {
+		p.resolvedAssignExpr[key] = ""
+		return
+	}
 	val, ok := valueSpec.Values[0].(*ast.BasicLit)
 	if !ok {
 		return

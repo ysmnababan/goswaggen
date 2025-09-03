@@ -152,6 +152,8 @@ func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration
 
 	ast.Inspect(handlerFunc.FuncDecl, func(n ast.Node) bool {
 		for _, inspector := range inspectorList {
+			// printer.Fprint(os.Stdout, p.fset, n)
+			// fmt.Println()
 			inspector.Inspect(n)
 		}
 		return true
