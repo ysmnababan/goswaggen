@@ -9,7 +9,7 @@ import (
 
 // overridden at build time
 // go build -ldflags="-X 'github.com/ysmnababan/goswaggen/internal/cmd.version=v0.2.3'" -o goswaggen.exe
-var version = "v1.0.0" 
+var version = "v1.0.0"
 var rootCmd = &cobra.Command{
 	Use:     "goswaggen",
 	Short:   "Goswaggen is a cli tool for generating handler comment block",

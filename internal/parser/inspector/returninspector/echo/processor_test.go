@@ -10,9 +10,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/fileutil"
 	"github.com/ysmnababan/goswaggen/internal/model"
-	"github.com/ysmnababan/goswaggen/internal/config"
 	"github.com/ysmnababan/goswaggen/internal/parser/helper"
 	"github.com/ysmnababan/goswaggen/internal/testutil"
 

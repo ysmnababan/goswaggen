@@ -7,4 +7,3 @@ import (
 type Inspector interface {
 	Inspect(ast.Node)
 }
-

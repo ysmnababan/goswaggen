@@ -170,7 +170,6 @@ var HTTP_STATUS_CODE_MAPPING = map[string]int{
 	"511":                                 511,
 }
 
-
 var ECHO_PRODUCE_MAP = map[string]string{
 	"HTML":       "html",
 	"HTMLBlob":   "html",
