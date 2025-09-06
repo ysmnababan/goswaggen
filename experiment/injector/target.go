@@ -8,7 +8,6 @@ type data struct {
 	/// other comment
 }
 
-//
 // first
 // second
 // third
