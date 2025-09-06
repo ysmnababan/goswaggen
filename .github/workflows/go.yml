@@ -6,7 +6,7 @@ on:
       - staging
       - dev
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5 
@@ -19,8 +19,8 @@ jobs:
       - name: Install dependencies
         run: go get .
 
-      # - name: Go Format
-      #   run: gofmt -s -w . && git diff --exit-code
+      - name: Go Format
+        run: gofmt -w . && git diff --exit-code
 
       - name: Test
         run: go test -coverpkg=./... -coverprofile=coverage.out ./...
