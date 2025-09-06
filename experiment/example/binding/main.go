@@ -9,7 +9,7 @@ import (
 
 type Request struct {
 	Name     string `query:"Name"`
-	Email    string 
+	Email    string
 	Personal Nested
 }
 

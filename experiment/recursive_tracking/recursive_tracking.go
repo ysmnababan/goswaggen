@@ -321,14 +321,14 @@ func FindHandlerRegistration(ctx *RegistrationContext) []*HandlerRegistration {
 					// recursive function is completed
 					ctx.CurrentExpr = nil
 					prevFunc := ctx.CurrentFunc
-					prevGroupPath := ctx.CreateGroupPathDuplicate()					
+					prevGroupPath := ctx.CreateGroupPathDuplicate()
 					ctx.CurrentFunc = ctx.GetFuncDecl(handlerReg.Func)
 
 					regs := FindHandlerRegistration(ctx)
 
 					ctx.CurrentFunc = prevFunc
 					ctx.GroupPath = prevGroupPath
-					
+
 					ctx.AliasForRouterTypeArgs = "" // reset alias for each `ast.FuncDecl` inspect
 					result = append(result, regs...)
 				}

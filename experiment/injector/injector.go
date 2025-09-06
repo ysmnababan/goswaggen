@@ -44,7 +44,7 @@ func (i *injector) InsertToCommentGroup(cg *ast.CommentGroup) {
 		}
 		iter++
 	}
-	fmt.Println("iter",iter)
+	fmt.Println("iter", iter)
 	if !found {
 		i.file.Comments = append(i.file.Comments, cg)
 		return

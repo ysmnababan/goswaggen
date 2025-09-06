@@ -59,7 +59,7 @@ func main() {
 	e.HideBanner = true
 	e.IPExtractor = ef.ExtractIPDirect()
 	middleware.Init(e, f.Redis)
-	
+
 	e.GET("/test", func(c ef.Context) error {
 		return nil
 	})
@@ -68,12 +68,12 @@ func main() {
 	}
 	first_group := e.Group("/first")
 	first_group.GET("/TEST1", HandlerForFirstGroup)
-	
+
 	e.GET("/TEST2", handlerTest)
-	
+
 	second_group := first_group.Group("/second")
 	second_group.GET("/TEST3", HandlerForSecondGroup)
-	
+
 	e.POST("/TEST4", dummyhandler.JustDummyHandler)
 	NotRegisterEcho("hehe")
 	RegisterEcho(e, "ignore-this")
