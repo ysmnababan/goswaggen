@@ -54,11 +54,11 @@ GENERAL:
 - [X] Assembly each part
 - [X] Add unit test for each function
 - [X] Learn how to sync to the latest update
-- [ ] Test `gen` command
-- [ ] Create `readme` for installing and using
-- [ ] Add `CI` for testing
-- [ ] Add `CD` for building the app
-- [ ] Add `docs` containing design-decisions, faq, and internals
+- [X] Test `gen` command
+- [X] Create `readme` for installing and using
+- [X] Add `CI` for testing
+- [X] Add `CD` for building the app
+- [X] Add `docs` containing design-decisions, faq, and internals
 
 IMPROVEMENT:
 - [ ] Query and QueryParam can analyze id type other that string, see the `strconv`
