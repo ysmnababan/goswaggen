@@ -9,6 +9,7 @@ type Param struct {
 }
 
 type CommentBlock struct {
+	Docs        string   // doc comment for explaining the function
 	Summary     string   // same as function name
 	Description string   // same as function name with better formating
 	Tags        string   // `___` by default

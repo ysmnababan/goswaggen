@@ -9,4 +9,5 @@ type Parser interface {
 	GetFullPath() string
 	GetPayloadInfos() []*model.PayloadInfo
 	GetReturnResponses() []*model.ReturnResponse
+	GetExistingCommentBlock() string
 }
