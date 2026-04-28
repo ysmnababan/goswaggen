@@ -48,6 +48,7 @@ func (g *generator) CreateCommentBlock() []string {
 	g.setResponse()
 	g.setProduceType()
 	g.setPath()
+	g.setSecurity()
 
 	out := []string{}
 	cb := g.commentBlock
@@ -57,6 +58,9 @@ func (g *generator) CreateCommentBlock() []string {
 	}
 	if len(cb.Produce) != 0 {
 		out = append(out, cb.Produce)
+	}
+	if len(cb.Security) != 0 {
+		out = append(out, cb.Security)
 	}
 	if len(cb.Params) != 0 {
 		out = append(out, cb.Params...)
@@ -358,4 +362,11 @@ func (g *generator) PrintCommmentBlock() {
 		fmt.Println(r)
 	}
 	fmt.Println(cb.Router)
+}
+
+func (g *generator) setSecurity() {
+	if strings.TrimSpace(g.config.Security) == "" {
+		return
+	}
+	g.commentBlock.Security = fmt.Sprintf("// @Security %s", g.config.Security)
 }

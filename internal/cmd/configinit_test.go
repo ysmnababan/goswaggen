@@ -13,5 +13,6 @@ func TestInitConfig(t *testing.T) {
 	err := InitConfig(w)
 	require.NoError(t, err)
 	assert.Equal(t, `error_response: "default.Error"
-success_response: "default.Success"`, w.String())
+success_response: "default.Success"
+security: "BearerAuth"`, w.String())
 }
