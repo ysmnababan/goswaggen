@@ -7,28 +7,28 @@ GO_PACKAGES := ./...
 # -------------------------------------------------------------------
 # Build
 # -------------------------------------------------------------------
-.PHONY: build
-build:
-	go build -o $(BINARY_PATH) -v $(GO_PACKAGES)
-
 .PHONY: clean
 clean:
 	rm -rf ./bin coverage.out results.json
 
+.PHONY: build
+build:
+	go build -o $(BINARY_PATH) -v .
+
 # -------------------------------------------------------------------
 # Test
 # -------------------------------------------------------------------
-.PHONY: test
-test:
-	go test $(GO_PACKAGES)
-
-.PHONY: test-all
-test-all:
+.PHONY: gotest
+gotest:
 	go test -race -coverpkg=$(GO_PACKAGES) -coverprofile=coverage.out $(GO_PACKAGES)
 
-.PHONY: coverage
-coverage: test-all
+.PHONY: go-cover-html
+go-cover-html: gotest
 	go tool cover -html=coverage.out
+
+.PHONY: go-cover-func
+go-cover-func: gotest
+	go tool cover -func=coverage.out
 
 # -------------------------------------------------------------------
 # Lint & Format

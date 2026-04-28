@@ -37,7 +37,7 @@ func InitConfig(out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	w.Flush()
+	_ = w.Flush()
 	return nil
 }
 
