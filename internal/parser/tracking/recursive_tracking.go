@@ -272,7 +272,7 @@ func handleImportedFunctionRegistration(ctx *context.RegistrationContext) (*mode
 	return out, true
 }
 
-// find all handler registration
+// FindHandlerRegistration finds all handler registration
 // only contains the type of function (not the ast node)
 // need to be inspected later on
 // pattern that can be recognized:
