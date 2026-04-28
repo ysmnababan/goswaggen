@@ -49,6 +49,7 @@ func (g *generator) preloadPreviousCommentBlock() {
 	if strings.TrimSpace(g.prevCommentBlock) == "" {
 		return
 	}
+	g.prevCommentBlock = strings.ReplaceAll(g.prevCommentBlock, "\t", " ")
 	g.extractFuncDeclDocs(g.prevCommentBlock)
 	comments := strings.SplitSeq(g.prevCommentBlock, "\n")
 	for c := range comments {

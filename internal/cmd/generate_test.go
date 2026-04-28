@@ -374,12 +374,12 @@ func TestGenerate_PreloadComment(t *testing.T) {
 	// with multiline docs,
 	// so make sure all comment is still there
 	//
-	// @Summary This is Summary Login
-	// @Description This is the description too
-	// @Tags dontforgetthetag
-	// @Accept json
-	// @Produce json
-	// @Param req body pkg.UserLoginRequest true "change this description"
+	// @Summary	This is Summary Login
+	// @Description	This is the description too
+	// @Tags	dontforgetthetag
+	// @Accept	json
+	// @Produce	json
+	// @Param	req body pkg.UserLoginRequest true "change this description"
 	// @Param id path string true "change this description"
 	// @Success 200 {object} pkg.Response "success"
 	// @Failure 500 {object} default.Failure "error"
