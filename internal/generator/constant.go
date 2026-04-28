@@ -43,4 +43,5 @@ var (
 	SUMMARY_COMMENT_BLOCK_PREFIX     = "@Summary"
 	DESCRIPTION_COMMENT_BLOCK_PREFIX = "@Description"
 	TAGS_COMMENT_BLOCK_PREFIX        = "@Tags"
+	DOCS_TEMPLATE                    = "// %s handles %s %s"
 )

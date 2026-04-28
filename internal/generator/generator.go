@@ -33,6 +33,7 @@ func NewGenerator(p Parser, cfg *config.Config) *generator {
 		payloads:      p.GetPayloadInfos(),
 		responses:     p.GetReturnResponses(),
 		commentBlock: &model.CommentBlock{
+			Docs:     []string{},
 			Params:   []string{},
 			Response: []string{},
 		},
@@ -64,7 +65,7 @@ func (g *generator) preloadPreviousCommentBlock() {
 	if strings.TrimSpace(g.prevCommentBlock) == "" {
 		return
 	}
-
+	g.extractFuncDeclDocs(g.prevCommentBlock)
 	comments := strings.SplitSeq(g.prevCommentBlock, "\n")
 	for c := range comments {
 		c = strings.TrimSpace(c)
@@ -89,8 +90,26 @@ func (g *generator) preloadPreviousCommentBlock() {
 	}
 }
 
+// extractFuncDeclDocs extract the function docs if exist.
+// It starts with the same name as the function and ends
+// with an empty comment `// `.
+func (g *generator) extractFuncDeclDocs(comment string) {
+	commentAsLine := strings.Split(comment, "\n")
+	if !strings.HasPrefix(commentAsLine[0], g.funcName) {
+		return
+	}
+
+	for _, c := range commentAsLine {
+		if strings.TrimSpace(c) == "" {
+			break
+		}
+		g.commentBlock.Docs = append(g.commentBlock.Docs, c)
+	}
+}
+
 func (g *generator) CreateCommentBlock() []string {
-	fmt.Println(g.prevCommentBlock)
+	g.preloadPreviousCommentBlock()
+	g.setDocs()
 	g.setSummary()
 	g.setDescription()
 	g.setTags()
@@ -101,8 +120,11 @@ func (g *generator) CreateCommentBlock() []string {
 	g.setPath()
 	g.setSecurity()
 
-	out := []string{}
 	cb := g.commentBlock
+	out := make([]string, 0,
+		len(cb.Docs)+len(cb.Params)+len(cb.Response)+7,
+	)
+	out = append(out, cb.Docs...)
 	out = append(out, cb.Summary, cb.Description, cb.Tags)
 	if len(cb.Accept) != 0 {
 		out = append(out, cb.Accept)
@@ -121,6 +143,17 @@ func (g *generator) CreateCommentBlock() []string {
 	}
 	out = append(out, cb.Router)
 	return out
+}
+
+func (g *generator) setDocs() {
+	if len(g.commentBlock.Docs) > 0 {
+		return
+	}
+	docs := []string{
+		fmt.Sprintf(DOCS_TEMPLATE, g.funcName, g.method, g.path),
+		"// ",
+	}
+	g.commentBlock.Docs = docs
 }
 
 func (g *generator) setSummary() {
