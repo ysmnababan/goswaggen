@@ -175,7 +175,7 @@ func TestGenerate_WithInjector(t *testing.T) {
 	})
 }
 
-func TestGenerate(t *testing.T) {
+func TestGenerate_Success(t *testing.T) {
 	tmp, err := testutil.NewTemporaryTestFile(
 		t.TempDir(),
 		testutil.WithEchoAPIResponsePackage,
@@ -242,22 +242,24 @@ func TestGenerate(t *testing.T) {
 	}
 `
 	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
+	root := tmp.GetTempFile()
 	require.NoError(t, err)
-	buf := new(bytes.Buffer)
-	err = Generate(
-		GeneratePayload{
-			root:        tmp.GetTempFile(),
-			targetFunc:  "Login",
-			shouldForce: false,
-			config: &config.Config{
-				DefaultSuccessResponse: "default.Success",
-				DefaultFailureResponse: "default.Failure",
+	t.Run("success", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		err = Generate(
+			GeneratePayload{
+				root:        root,
+				targetFunc:  "Login",
+				shouldForce: false,
+				config: &config.Config{
+					DefaultSuccessResponse: "default.Success",
+					DefaultFailureResponse: "default.Failure",
+				},
+				srcFile: buf,
 			},
-			srcFile: buf,
-		},
-	)
-	require.NoError(t, err)
-	want := `
+		)
+		require.NoError(t, err)
+		want := `
 // @Summary Login
 // @Description Login
 // @Tags ______
@@ -270,9 +272,43 @@ func TestGenerate(t *testing.T) {
 // @Failure 400 {object} default.Failure "error"
 // @Failure 404 {object} default.Failure "error"
 // @Router /test/{id} [put]`
-	got := buf.String()
-	assert.Contains(t, got, want)
-	fmt.Println(got)
+		got := buf.String()
+		assert.Contains(t, got, want)
+	})
+
+	t.Run("success with security", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		err = Generate(
+			GeneratePayload{
+				root:        root,
+				targetFunc:  "Login",
+				shouldForce: false,
+				config: &config.Config{
+					DefaultSuccessResponse: "default.Success",
+					DefaultFailureResponse: "default.Failure",
+					Security:               "ApiKeyAuth",
+				},
+				srcFile: buf,
+			},
+		)
+		require.NoError(t, err)
+		want := `
+// @Summary Login
+// @Description Login
+// @Tags ______
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param req body pkg.UserLoginRequest true "change this description"
+// @Param id path string true "change this description"
+// @Success 200 {object} pkg.Response "success"
+// @Failure 500 {object} default.Failure "error"
+// @Failure 400 {object} default.Failure "error"
+// @Failure 404 {object} default.Failure "error"
+// @Router /test/{id} [put]`
+		got := buf.String()
+		assert.Contains(t, got, want)
+	})
 }
 
 func TestGenerate_MultipleHandlerFound(t *testing.T) {

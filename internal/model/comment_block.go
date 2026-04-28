@@ -14,6 +14,7 @@ type CommentBlock struct {
 	Tags        string   // `___` by default
 	Accept      string   // info from the binding param
 	Produce     string   // info from response
+	Security    string   // info from the registration
 	Params      []string // info from the binding
 	Response    []string // info from the  response
 	Router      string   // info from the registration

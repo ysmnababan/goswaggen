@@ -76,10 +76,13 @@ func Generate(payload GeneratePayload) error {
 			return err
 		}
 	} else {
-		fmt.Fprintf(payload.srcFile,
+		_, err := fmt.Fprintf(payload.srcFile,
 			"Copy this swagger comment to your code: \n\n%v",
 			strings.Join(cmt, "\n"),
 		)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
