@@ -122,8 +122,15 @@ func resolveTypeName(typeInfo *types.Info, ident *ast.Ident) string {
 	if !ok {
 		return vType.String()
 	}
+	args := named.TypeArgs()
+	genericType := ""
+	if args != nil { // for handling response with generic type, e.g. Response[User]
+		named := args.At(0).(*types.Named)
+		genericType = fmt.Sprintf("[%s.%s]", named.Obj().Pkg().Name(), named.Obj().Name())
+	}
+
 	typeName := named.Obj()
-	return fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
+	return fmt.Sprintf("%s.%s%s", typeName.Pkg().Name(), typeName.Name(), genericType)
 }
 
 func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
@@ -145,6 +152,7 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 			return resolveTypeName(i.typesInfo, cmpLit)
 		case *ast.StructType:
 			// TODO: handle this later
+			// fmt.Println("here??", cmpLit.Fields)
 			return "___" // to
 		case *ast.ArrayType:
 			ident, ok := cmpLit.Elt.(*ast.Ident)
@@ -167,6 +175,7 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 			}
 			return fmt.Sprintf("%s.%s", x.Name, cmpLit.Sel.String())
 		default:
+			fmt.Println("OR HERE")
 			return ""
 		}
 	}
