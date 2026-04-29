@@ -8,42 +8,47 @@ It reduces the manual effort of writing documentation by analyzing your code and
 
 - Parses your Go handler functions
 - Generates Swagger-compatible comment blocks above each handler
-- Compatible with popular frameworks like `net/http`, `Echo`, or `Gin`
+- Compatible with `Echo`.
 - Simple CLI usage — integrates into your workflow
 
 ## 🚀 Getting Started
-
 
 ### Installation
 
 #### For Go Developers
 
 1. **Install the CLI:**
-    ```bash
-    go install github.com/ysmnababan/goswaggen@latest
-    ```
+
+   ```bash
+   go install github.com/ysmnababan/goswaggen@latest
+   ```
 
 2. **(Optional) Initialize config:**
-    ```bash
-    goswaggen init
-    ```
-    This creates a `goswaggen.yml` for customizing default error and success responses:
-    ```yml
-    error_response: "default.Error"
-    success_response: "default.Success"
-    ```
+
+   ```bash
+   goswaggen init
+   ```
+
+   This creates a `goswaggen.yml` for customizing default error and success responses:
+
+   ```yml
+   error_response: "default.Error"
+   success_response: "default.Success"
+   security: "BearerAuth"
+   ```
 
 3. **Navigate to your project directory:**  
-    Ensure your handlers are registered to a router in `main.go`.
+   Ensure your handlers are registered to a router in `main.go`.
 
 4. **Generate Swagger comments:**
-    ```bash
-    # Generate for a specific handler
-    goswaggen gen <handler_name>
 
-    # Force direct insertion above handlers
-    goswaggen gen <handler_name> -f
-    ```
+   ```bash
+   # Generate for a specific handler
+   goswaggen gen <handler_name>
+
+   # Force direct insertion above handlers
+   goswaggen gen <handler_name> -f
+   ```
 
 5. **Review and adjust generated comments as needed.**
 
@@ -69,6 +74,7 @@ It reduces the manual effort of writing documentation by analyzing your code and
   Directly insert comment block above the handler in your code.
 
 **Examples:**
+
 ```bash
 goswaggen gen Login
 goswaggen gen user.Login
@@ -78,28 +84,29 @@ goswaggen gen Login -f
 ---
 
 ## 📚 Usage Examples
+
 **Before:**
+
 ```go
 func (h *handler) LoginAsCompanyAdmin(c echo.Context) error {
-	ctx, ok := c.(*abstraction.Context)
-	if !ok {
-		return response.ErrorWrap(response.ErrBadRequest, errors.New("context invalid")).Send(c)
-	}
-	req := &dto.LoginAsCompanyAdminRequest{}
-	if err := c.Bind(req); err != nil {
-		return response.ErrorWrap(response.ErrValidation, err).Send(c)
-	}
-	if err := c.Validate(req); err != nil {
-		return response.ErrorWrap(response.ErrUnprocessableEntity, err).Send(c)
-	}
-	data, err := h.authService.LoginAsCompanyAdmin(ctx, req)
-	if err != nil {
-		return response.ErrorResponse(err).Send(c)
-	}
-	return response.SuccessResponse(data).Send(c)
+ ctx, ok := c.(*abstraction.Context)
+ if !ok {
+  return response.ErrorWrap(response.ErrBadRequest, errors.New("context invalid")).Send(c)
+ }
+ req := &dto.LoginAsCompanyAdminRequest{}
+ if err := c.Bind(req); err != nil {
+  return response.ErrorWrap(response.ErrValidation, err).Send(c)
+ }
+ if err := c.Validate(req); err != nil {
+  return response.ErrorWrap(response.ErrUnprocessableEntity, err).Send(c)
+ }
+ data, err := h.authService.LoginAsCompanyAdmin(ctx, req)
+ if err != nil {
+  return response.ErrorResponse(err).Send(c)
+ }
+ return response.SuccessResponse(data).Send(c)
 }
 ```
-
 
 **After:**
 
@@ -118,28 +125,30 @@ By running the command `goswaggen gen LoginAsCompanyAdmin` :
 // @Failure 404 {object} response.Error "error"
 // @Router /app/v1/company/auth/login [post]
 func (h *handler) LoginAsCompanyAdmin(c echo.Context) error {
-	ctx, ok := c.(*abstraction.Context)
-	if !ok {
-		return response.ErrorWrap(response.ErrBadRequest, errors.New("context invalid")).Send(c)
-	}
-	req := &dto.LoginAsCompanyAdminRequest{}
-	if err := c.Bind(req); err != nil {
-		return response.ErrorWrap(response.ErrValidation, err).Send(c)
-	}
-	if err := c.Validate(req); err != nil {
-		return response.ErrorWrap(response.ErrUnprocessableEntity, err).Send(c)
-	}
-	data, err := h.authService.LoginAsCompanyAdmin(ctx, req)
-	if err != nil {
-		return response.ErrorResponse(err).Send(c)
-	}
-	return response.SuccessResponse(data).Send(c)
+ ctx, ok := c.(*abstraction.Context)
+ if !ok {
+  return response.ErrorWrap(response.ErrBadRequest, errors.New("context invalid")).Send(c)
+ }
+ req := &dto.LoginAsCompanyAdminRequest{}
+ if err := c.Bind(req); err != nil {
+  return response.ErrorWrap(response.ErrValidation, err).Send(c)
+ }
+ if err := c.Validate(req); err != nil {
+  return response.ErrorWrap(response.ErrUnprocessableEntity, err).Send(c)
+ }
+ data, err := h.authService.LoginAsCompanyAdmin(ctx, req)
+ if err != nil {
+  return response.ErrorResponse(err).Send(c)
+ }
+ return response.SuccessResponse(data).Send(c)
 }
 ```
 
 ## ❓ FAQ and Troubleshooting
+
 See [FAQ](./docs/faq.md) for common questions.
 
 ---
 
-*Tip: Keep your handlers registered and code organized for best results!*
+_Tip: Keep your handlers registered and code organized for best results!_
+
