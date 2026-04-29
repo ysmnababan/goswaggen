@@ -1041,10 +1041,20 @@ func TestProcess_StandardResponse(t *testing.T) {
 			}
 			return c.JSON(200, result) // Generic response with type parameter
 		case 25:
+			user := UserLoginRequest{Data: 42}
+			return c.JSON(200, GResponse[UserLoginRequest]{
+				Success: true,
+				Data:    user,
+			}) // Generic response with type parameter
+		case 26:
 			user := pkg.User{}
 			return c.JSON(200, pkg.IR[pkg.User]{
 				Success: true,
 				Data:    user,
+			}) // Generic response with type parameter
+		case 27:
+			return c.JSON(200, pkg.IR[any]{
+				Success: true,
 			}) // Generic response with type parameter
 		default:
 			// Default JSON object
@@ -1092,7 +1102,7 @@ func TestProcess_StandardResponse(t *testing.T) {
 		}
 		return true
 	})
-	totalTestCases := 26
+	totalTestCases := 28
 	assert.Equal(t, totalTestCases, len(out))
 	for _, o := range out {
 		assert.Equal(t, 200, o.StatusCode)
@@ -1127,7 +1137,9 @@ func TestProcess_StandardResponse(t *testing.T) {
 		{"json", "{array}", "[]pkg.User"},              // 22: JSON with []pkg.User{}
 		{"json", "{object}", "main.GResponse[main.UserLoginRequest]"},
 		{"json", "{object}", "pkg.IR[pkg.User]"},
+		{"json", "{object}", "main.GResponse[main.UserLoginRequest]"},
 		{"json", "{object}", "pkg.IR[pkg.User]"},
+		{"json", "{object}", "pkg.IR[any]"},
 	}
 	for i := range totalTestCases - 1 {
 		assert.Equal(t, expected[i].ProduceType, out[i].ProduceType, "ProduceType mismatch at case %d", i+1)

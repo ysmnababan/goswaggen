@@ -12,7 +12,7 @@ clean:
 	rm -rf ./bin coverage.out results.json
 
 .PHONY: build
-build:
+build: clean
 	go build -o $(BINARY_PATH) -v .
 
 # -------------------------------------------------------------------
@@ -73,5 +73,5 @@ tidy-check:
 # Precommit — run before pushing/committing
 # -------------------------------------------------------------------
 .PHONY: precommit
-precommit: tidy-check fmt-check lint test-all vulncheck
+precommit: tidy-check fmt-check lint gotest vulncheck
 	@echo "✅ All precommit checks passed"
