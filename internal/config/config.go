@@ -4,7 +4,7 @@ var YamlConfigTemplate string = `error_response: "default.Error"
 success_response: "default.Success"
 security: "BearerAuth"`
 
-var YamlConfigName string = "goswaggen.yaml"
+var YamlConfigName string = ".goswaggen.yaml"
 
 type Config struct {
 	DefaultSuccessResponse string `yaml:"success_response"`

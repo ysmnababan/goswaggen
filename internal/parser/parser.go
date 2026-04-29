@@ -19,8 +19,10 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-var FSET *token.FileSet
-var MAIN_PACKAGE_NAME = "main"
+var (
+	FSET            *token.FileSet
+	MainPackageName = "main"
+)
 
 type parser struct {
 	fset         *token.FileSet
@@ -122,11 +124,11 @@ func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, 
 	}
 
 	if len(out) != 1 {
-		handlers := ""
+		var handlers strings.Builder
 		for _, h := range out {
-			handlers += fmt.Sprintf("    %s	: (%s)\n", h.GetFuncNameWithPackage(), h.FilePath)
+			fmt.Fprintf(&handlers, "    %s	: (%s)\n", h.GetFuncNameWithPackage(), h.FilePath)
 		}
-		return nil, fmt.Errorf("multiple handlers found\n%s", handlers)
+		return nil, fmt.Errorf("multiple handlers found\n%s", handlers.String())
 	}
 	return out[0], nil
 }
@@ -152,8 +154,6 @@ func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration
 
 	ast.Inspect(handlerFunc.FuncDecl, func(n ast.Node) bool {
 		for _, inspector := range inspectorList {
-			// printer.Fprint(os.Stdout, p.fset, n)
-			// fmt.Println()
 			inspector.Inspect(n)
 		}
 		return true

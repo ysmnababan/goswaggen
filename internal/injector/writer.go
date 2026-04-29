@@ -70,7 +70,6 @@ func (i *injector) InjectComment(comments []string, srcFile io.Writer) error {
 		newCommentGroup := &ast.CommentGroup{
 			List: newList,
 		}
-		// i.file.Comments = append(i.file.Comments, newCommentGroup)
 		i.insertToCommentGroup(newCommentGroup)
 	} else {
 		i.funcAst.Doc.List = astComments
