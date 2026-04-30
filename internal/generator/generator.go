@@ -231,29 +231,46 @@ func (g *generator) setParam() {
 	}
 }
 
+func getDefaultDesciption(varType string) string {
+	switch varType {
+	case "time.Time":
+		return "\"change this description \" format(date-time)"
+	default:
+		return DEFAULT_PARAM_DESCRIPTION
+	}
+}
+
+func getSwaggerType(varType string) string {
+	switch varType {
+	case "time.Time":
+		return "string"
+	default:
+		return varType
+	}
+}
+
 func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 	out := []*model.Param{}
 	switch i.BindMethod {
 	case "Bind":
-		if method == "GET" || method == "DELETE" {
-			for _, f := range i.FieldLists {
-				method, name := getPriorityTag(f.Tag)
-				isRequired := true
-				if !isRequiredFieldFromTag(f.Tag) && f.IsPointer {
-					isRequired = false
-				}
-				if method != "" && name != "" {
-					p := &model.Param{
-						Name:        name,
-						BindMethod:  method,
-						ParamType:   f.VarType,
-						Description: DEFAULT_PARAM_DESCRIPTION,
-						IsRequired:  isRequired,
-					}
-					out = append(out, p)
-				}
+		for _, f := range i.FieldLists {
+			method, name := getPriorityTag(f.Tag)
+			isRequired := true
+			if !isRequiredFieldFromTag(f.Tag) && f.IsPointer {
+				isRequired = false
 			}
-		} else {
+			if method != "" && name != "" {
+				p := &model.Param{
+					Name:        name,
+					BindMethod:  method,
+					ParamType:   getSwaggerType(f.VarType),
+					Description: getDefaultDesciption(f.VarType),
+					IsRequired:  isRequired,
+				}
+				out = append(out, p)
+			}
+		}
+		if method != "GET" && method != "DELETE" {
 			p := &model.Param{
 				Name:        i.BasicLit,
 				BindMethod:  "body",
@@ -281,6 +298,15 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 			Description: DEFAULT_PARAM_DESCRIPTION,
 		}
 		out = append(out, p)
+	case "FormValue", "FormFile":
+		p := &model.Param{
+			Name:        i.BasicLit,
+			BindMethod:  "formData",
+			IsRequired:  true,
+			ParamType:   i.ParamTypes,
+			Description: DEFAULT_PARAM_DESCRIPTION,
+		}
+		out = append(out, p)
 	default:
 		log.Println("unknown bind method:", i.BindMethod)
 	}
@@ -290,11 +316,11 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 func getPriorityTag(tags map[string]string) (method string, name string) {
 	method = ""
 	name = ""
-	if n, ok := tags["param"]; ok {
+	if n, ok := tags["param"]; ok && n != "-" {
 		name = n
 		method = "path"
 	}
-	if n, ok := tags["query"]; ok {
+	if n, ok := tags["query"]; ok && n != "-" {
 		name = n
 		method = "query"
 	}
@@ -431,7 +457,7 @@ func (g *generator) setPath() {
 		strings.ToLower(g.method))
 }
 
-func (g *generator) PrintCommmentBlock() {
+func (g *generator) PrintCommentBlock() {
 	cb := g.commentBlock
 	fmt.Println(cb.Summary)
 	fmt.Println(cb.Description)

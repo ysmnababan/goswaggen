@@ -226,6 +226,31 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 			return fmt.Sprintf("%s.%s", x.Name, cmpLit.Sel.String())
 		case *ast.IndexExpr:
 			return resolveGenericType(i.typesInfo, cmpLit)
+		case *ast.MapType:
+			key := ""
+			ident, ok := cmpLit.Key.(*ast.Ident)
+			if ok {
+				key = resolveTypeName(i.typesInfo, ident)
+			} else {
+				log.Printf("unsupported map key type: %T\n", cmpLit.Key)
+				key = "any"
+			}
+			value := ""
+			switch valType := cmpLit.Value.(type) {
+			case *ast.Ident:
+				value = resolveTypeName(i.typesInfo, valType)
+			case *ast.InterfaceType:
+				value = "interface{}"
+			default:
+				log.Printf("unsupported map value type: %T\n", valType)
+				value = "any"
+			}
+
+			cmpLitType := fmt.Sprintf(
+				"map[%s]%s", key, value,
+			)
+			fmt.Println(cmpLitType)
+			return cmpLitType
 		default:
 			cmpLitType := fmt.Sprintf("%T => ", cmpLit)
 			return cmpLitType
@@ -258,6 +283,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 			result.IsSuccess = true
 		}
 		result.SchemaType = resolveSchemeType(selExpr.Sel.Name, result.ReturnDataType)
+		fmt.Println(result)
 		return &result
 	}
 	result.ProduceType = "json"
