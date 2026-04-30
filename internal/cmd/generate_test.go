@@ -347,7 +347,7 @@ func TestGenerate_WithQuery(t *testing.T) {
 	import (
 		"basicapi/response"
 		"fmt"
-
+		"time"
 		"github.com/labstack/echo/v4"
 	)
 
@@ -361,6 +361,8 @@ func TestGenerate_WithQuery(t *testing.T) {
 		Password    string            ` + "`query:\"password\" validate:\"required\"`" + ` // basic
 		NotRequired *int              ` + "`query:\"not_required\"`" + ` // basic
 		NotAData    string            ` + "`query:\"-\" validate:\"required\"`" + ` // basic
+		Today       time.Time         ` + "`query:\"today\" validate:\"required\"`" + ` // basic
+		Tomorrow    *time.Time        ` + "`query:\"tomorrow\" `" + ` // basic
 	}
 
 	func Login(c echo.Context) error {
@@ -408,6 +410,8 @@ func TestGenerate_WithQuery(t *testing.T) {
 // @Param email query string true "change this description"
 // @Param password query string true "change this description"
 // @Param not_required query int false "change this description"
+// @Param today query string true "change this description " format(date-time)
+// @Param tomorrow query string false "change this description " format(date-time)
 // @Param id path string true "change this description"
 // @Success 200 {object} pkg.Response "success"
 // @Failure 500 {object} default.Failure "error"

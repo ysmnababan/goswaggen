@@ -231,6 +231,24 @@ func (g *generator) setParam() {
 	}
 }
 
+func getDefaultDesciption(varType string) string {
+	switch varType {
+	case "time.Time":
+		return "\"change this description \" format(date-time)"
+	default:
+		return DEFAULT_PARAM_DESCRIPTION
+	}
+}
+
+func getSwaggerType(varType string) string {
+	switch varType {
+	case "time.Time":
+		return "string"
+	default:
+		return varType
+	}
+}
+
 func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 	out := []*model.Param{}
 	switch i.BindMethod {
@@ -246,8 +264,8 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 					p := &model.Param{
 						Name:        name,
 						BindMethod:  method,
-						ParamType:   f.VarType,
-						Description: DEFAULT_PARAM_DESCRIPTION,
+						ParamType:   getSwaggerType(f.VarType),
+						Description: getDefaultDesciption(f.VarType),
 						IsRequired:  isRequired,
 					}
 					out = append(out, p)
