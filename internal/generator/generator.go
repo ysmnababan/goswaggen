@@ -290,11 +290,11 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 func getPriorityTag(tags map[string]string) (method string, name string) {
 	method = ""
 	name = ""
-	if n, ok := tags["param"]; ok {
+	if n, ok := tags["param"]; ok && n != "-" {
 		name = n
 		method = "path"
 	}
-	if n, ok := tags["query"]; ok {
+	if n, ok := tags["query"]; ok && n != "-" {
 		name = n
 		method = "query"
 	}
