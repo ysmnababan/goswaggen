@@ -424,6 +424,114 @@ func TestGenerate_WithQuery(t *testing.T) {
 	})
 }
 
+func TestGenerate_BodyWithQueryParam(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/pkg"
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.PUT("/test/:id", pkg.Login)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package pkg
+
+	import (
+		"basicapi/response"
+		"fmt"
+		"time"
+		"github.com/labstack/echo/v4"
+	)
+
+	type Response struct {
+		Token string
+		Name  string
+	}
+
+	type UserLoginRequest struct {
+		ID          string            ` + "`param:\"id\"`" + `
+		Today       time.Time         ` + "`query:\"today\" validate:\"required\"`" + ` // basic
+		Tomorrow    *time.Time        ` + "`query:\"tomorrow\" `" + ` // basic
+		Email       string            ` + "`json:\"email\" validate:\"required\"`" + `    // basic
+		Password    string            ` + "`json:\"password\" validate:\"required\"`" + ` // basic
+	}
+
+	func Login(c echo.Context) error {
+		req := &UserLoginRequest{}
+		res := &Response{}
+		err := c.Bind(req)
+		if err != nil {
+			return response.Wrap(response.ErrUnprocessableEntity, fmt.Errorf("binding error: %w", err))
+		}
+
+		err = c.Validate(req)
+		if err != nil {
+			return response.Wrap(response.ErrValidation, fmt.Errorf("error validation: %w", err))
+		}
+		return c.JSON(200, res)
+	}
+`
+	err = tmp.AddNewFileInPackage("pkg", "pkg.go", libCode)
+	root := tmp.GetTempFile()
+	require.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		err = Generate(
+			GeneratePayload{
+				root:        root,
+				targetFunc:  "Login",
+				shouldForce: false,
+				config: &config.Config{
+					DefaultSuccessResponse: "default.Success",
+					DefaultFailureResponse: "default.Failure",
+				},
+				srcFile: buf,
+			},
+		)
+		require.NoError(t, err)
+		want := `
+// Login handles PUT /test/:id
+//
+// @Summary Login
+// @Description Login
+// @Tags ______
+// @Accept json
+// @Produce json
+// @Param id path string true "change this description"
+// @Param today query string true "change this description " format(date-time)
+// @Param tomorrow query string false "change this description " format(date-time)
+// @Param req body pkg.UserLoginRequest true "change this description"
+// @Success 200 {object} pkg.Response "success"
+// @Failure 500 {object} default.Failure "error"
+// @Failure 400 {object} default.Failure "error"
+// @Failure 404 {object} default.Failure "error"
+// @Router /test/{id} [put]`
+		got := buf.String()
+		t.Log(got)
+		assert.Contains(t, normalize(got), normalize(want))
+	})
+}
+
 func normalize(s string) string {
 	lines := strings.Split(s, "\n")
 	for i := range lines {

@@ -253,25 +253,24 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 	out := []*model.Param{}
 	switch i.BindMethod {
 	case "Bind":
-		if method == "GET" || method == "DELETE" {
-			for _, f := range i.FieldLists {
-				method, name := getPriorityTag(f.Tag)
-				isRequired := true
-				if !isRequiredFieldFromTag(f.Tag) && f.IsPointer {
-					isRequired = false
-				}
-				if method != "" && name != "" {
-					p := &model.Param{
-						Name:        name,
-						BindMethod:  method,
-						ParamType:   getSwaggerType(f.VarType),
-						Description: getDefaultDesciption(f.VarType),
-						IsRequired:  isRequired,
-					}
-					out = append(out, p)
-				}
+		for _, f := range i.FieldLists {
+			method, name := getPriorityTag(f.Tag)
+			isRequired := true
+			if !isRequiredFieldFromTag(f.Tag) && f.IsPointer {
+				isRequired = false
 			}
-		} else {
+			if method != "" && name != "" {
+				p := &model.Param{
+					Name:        name,
+					BindMethod:  method,
+					ParamType:   getSwaggerType(f.VarType),
+					Description: getDefaultDesciption(f.VarType),
+					IsRequired:  isRequired,
+				}
+				out = append(out, p)
+			}
+		}
+		if method != "GET" && method != "DELETE" {
 			p := &model.Param{
 				Name:        i.BasicLit,
 				BindMethod:  "body",
