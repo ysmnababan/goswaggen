@@ -709,5 +709,5 @@ func TestPrintCommentBlock(t *testing.T) {
 	}
 	cb := g.CreateCommentBlock()
 	assert.NotNil(t, cb)
-	g.PrintCommmentBlock()
+	g.PrintCommentBlock()
 }

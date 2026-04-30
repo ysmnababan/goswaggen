@@ -527,7 +527,24 @@ func (p *EchoPayloadProcessor) extractPayloadRequest(callExpr *ast.CallExpr) (*m
 			return nil, false
 		}
 		reqData.ParamTypes = "string"
+	case "FormValue":
+		if arg, ok := (argExp).(*ast.BasicLit); ok {
+			// c.FormValue("some-literal")
+			reqData = &model.PayloadInfo{
+				BasicLit:   arg.Value,
+				ParamTypes: "string",
+			}
+		}
+	case "FormFile":
+		if arg, ok := (argExp).(*ast.BasicLit); ok {
+			// c.FormValue("some-literal")
+			reqData = &model.PayloadInfo{
+				BasicLit:   arg.Value,
+				ParamTypes: "file",
+			}
+		}
 	default:
+		fmt.Printf("Unsupported bind method: %s\n", bindMethod)
 		return nil, false
 	}
 	reqData.BindMethod = bindMethod

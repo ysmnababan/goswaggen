@@ -298,6 +298,15 @@ func processPayload(i *model.PayloadInfo, method string) []*model.Param {
 			Description: DEFAULT_PARAM_DESCRIPTION,
 		}
 		out = append(out, p)
+	case "FormValue", "FormFile":
+		p := &model.Param{
+			Name:        i.BasicLit,
+			BindMethod:  "formData",
+			IsRequired:  true,
+			ParamType:   i.ParamTypes,
+			Description: DEFAULT_PARAM_DESCRIPTION,
+		}
+		out = append(out, p)
 	default:
 		log.Println("unknown bind method:", i.BindMethod)
 	}
@@ -448,7 +457,7 @@ func (g *generator) setPath() {
 		strings.ToLower(g.method))
 }
 
-func (g *generator) PrintCommmentBlock() {
+func (g *generator) PrintCommentBlock() {
 	cb := g.commentBlock
 	fmt.Println(cb.Summary)
 	fmt.Println(cb.Description)

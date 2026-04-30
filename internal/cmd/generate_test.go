@@ -532,6 +532,96 @@ func TestGenerate_BodyWithQueryParam(t *testing.T) {
 	})
 }
 
+func TestGenerate_WithFormFile(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(
+		t.TempDir(),
+		testutil.WithEchoAPIResponsePackage,
+	)
+
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"net/http"
+
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.POST("/upload", Upload)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func Upload(c echo.Context) error {
+		fileHeader, err := c.FormFile("file")
+		if err != nil {
+			return c.JSON(400, map[string]bool{
+				"error": true,
+			})
+		}
+
+		src, err := fileHeader.Open()
+		if err != nil {
+			return c.JSON(500, map[int]interface{}{
+				13: "failed to open file",
+			})
+		}
+		defer src.Close()
+
+		folder := c.FormValue("folder")
+
+		return c.JSON(200, map[string]interface{}{
+			"filename": fileHeader.Filename,
+			"size":     fileHeader.Size,
+			"folder":   folder,
+		})
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	root := tmp.GetTempFile()
+	require.NoError(t, err)
+	t.Run("success", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		err = Generate(
+			GeneratePayload{
+				root:        root,
+				targetFunc:  "Upload",
+				shouldForce: false,
+				config: &config.Config{
+					DefaultSuccessResponse: "default.Success",
+					DefaultFailureResponse: "default.Failure",
+				},
+				srcFile: buf,
+			},
+		)
+		require.NoError(t, err)
+		want := `
+// Upload handles POST /upload
+// 
+// @Summary Upload
+// @Description Upload
+// @Tags ______
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "change this description"
+// @Param folder formData string true "change this description"
+// @Success 200 {object} map[string]interface{} "success"
+// @Failure 400 {object} map[string]bool "error"
+// @Failure 500 {object} map[int]interface{} "error"
+// @Failure 404 {object} default.Failure "error"
+// @Router /upload [post]`
+		got := buf.String()
+		t.Log(got)
+		assert.Contains(t, normalize(got), normalize(want))
+	})
+}
+
 func normalize(s string) string {
 	lines := strings.Split(s, "\n")
 	for i := range lines {
