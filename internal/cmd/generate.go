@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,7 +14,10 @@ import (
 	"github.com/ysmnababan/goswaggen/internal/parser"
 )
 
-var shouldForce bool
+var (
+	shouldForce bool
+	path        string
+)
 
 type GeneratePayload struct {
 	root        string
@@ -21,6 +25,14 @@ type GeneratePayload struct {
 	srcFile     io.Writer
 	shouldForce bool
 	config      *config.Config
+	path        string
+}
+
+func (g GeneratePayload) CombinedPath() string {
+	if g.path != "" && g.root != "" {
+		return filepath.Join(g.root, g.path)
+	}
+	return ""
 }
 
 var generateCmd = &cobra.Command{
@@ -37,6 +49,7 @@ var generateCmd = &cobra.Command{
 			targetFunc:  targetFunc,
 			shouldForce: shouldForce,
 			config:      config.Cfg,
+			path:        path,
 		}
 		if !shouldForce {
 			payload.srcFile = os.Stdout
@@ -54,7 +67,7 @@ func Generate(payload GeneratePayload) error {
 	if err != nil {
 		return err
 	}
-	handlerReg, err := parser.ExtractFuncHandlerInfo(payload.targetFunc)
+	handlerReg, err := parser.ExtractFuncHandlerInfo(payload.targetFunc, payload.CombinedPath())
 	if err != nil {
 		return err
 	}
@@ -89,5 +102,6 @@ func Generate(payload GeneratePayload) error {
 
 func init() {
 	generateCmd.Flags().BoolVarP(&shouldForce, "force", "f", false, "update the comment block directly on the source file")
+	generateCmd.Flags().StringVarP(&path, "path", "p", "", "path to the source file (optional, if not provided it will be searched from the current directory)")
 	rootCmd.AddCommand(generateCmd)
 }
