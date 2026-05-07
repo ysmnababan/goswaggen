@@ -19,8 +19,11 @@ type PayloadInfo struct {
 }
 
 func (i *PayloadInfo) GetAcceptTag() string {
-	if i.BindMethod != "Bind" {
-		return ""
+	if i.BindMethod == "FormValue" {
+		return "multipart/form-data"
+	}
+	if i.BindMethod == "FormFile" {
+		return "multipart/form-data"
 	}
 	// Default value is `json`
 	// The `accept` tag depends on the Content-Type of the request.

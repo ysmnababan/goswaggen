@@ -243,13 +243,23 @@ func (p *EchoPayloadProcessor) resolveBind(argExp *ast.Expr) (*model.PayloadInfo
 	return reqData, true
 }
 
+func isSwaggoCompatibleType(typeStr string) bool {
+	switch typeStr {
+	case "time.Time":
+		return true
+	default:
+		// some type is not compatible with swaggo,
+		// like json.RawMessage, so we need to handle it separately
+		return false
+	}
+}
+
 // PopulateStructFields
 // Only for the `Bind` BindMethod
 func (p *EchoPayloadProcessor) populateStructFields(pType *types.Package, structDecl *ast.GenDecl) []*model.StructField {
 	result := []*model.StructField{}
 	pkg, ok := p.typePackageCache[pType]
 	if !ok {
-		log.Println("no pkg found", pType)
 		return nil
 	}
 	ast.Inspect(structDecl, func(n ast.Node) bool {
@@ -289,8 +299,25 @@ func (p *EchoPayloadProcessor) populateStructFields(pType *types.Package, struct
 			case *types.Named:
 				typeName := t.Obj()
 				nextStructDecl := p.typeNameToGenDeclCache[typeName]
-				out := p.populateStructFields(t.Obj().Pkg(), nextStructDecl)
-				result = append(result, out...)
+				if nextStructDecl == nil {
+					// probably defined in another package, like time.Time
+					newField := &model.StructField{
+						IsPointer: isPointer,
+						Name:      field.Names[0].Name,
+						VarType:   t.Obj().Type().String(),
+					}
+					if !isSwaggoCompatibleType(newField.VarType) {
+						break
+					}
+					if field.Tag != nil && field.Tag.Value != "" {
+						newField.Tag = tagparserutil.ParseTag(field.Tag.Value)
+					}
+					fmt.Println(*newField)
+					result = append(result, newField)
+				} else {
+					out := p.populateStructFields(t.Obj().Pkg(), nextStructDecl)
+					result = append(result, out...)
+				}
 			case *types.Struct:
 				// fmt.Println("Inline struct with", t.NumFields(), "fields")
 			default:
@@ -500,7 +527,24 @@ func (p *EchoPayloadProcessor) extractPayloadRequest(callExpr *ast.CallExpr) (*m
 			return nil, false
 		}
 		reqData.ParamTypes = "string"
+	case "FormValue":
+		if arg, ok := (argExp).(*ast.BasicLit); ok {
+			// c.FormValue("some-literal")
+			reqData = &model.PayloadInfo{
+				BasicLit:   arg.Value,
+				ParamTypes: "string",
+			}
+		}
+	case "FormFile":
+		if arg, ok := (argExp).(*ast.BasicLit); ok {
+			// c.FormValue("some-literal")
+			reqData = &model.PayloadInfo{
+				BasicLit:   arg.Value,
+				ParamTypes: "file",
+			}
+		}
 	default:
+		fmt.Printf("Unsupported bind method: %s\n", bindMethod)
 		return nil, false
 	}
 	reqData.BindMethod = bindMethod

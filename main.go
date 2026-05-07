@@ -33,6 +33,9 @@ func loadConfig(path string) {
 	if cfg.DefaultFailureResponse != "" {
 		config.Cfg.DefaultFailureResponse = cfg.DefaultFailureResponse
 	}
+	if cfg.Security != "" {
+		config.Cfg.Security = cfg.Security
+	}
 }
 
 func main() {

@@ -79,6 +79,7 @@ func TestResolveSchemeType(t *testing.T) {
 		})
 	}
 }
+
 func TestIsErrorIfStmt(t *testing.T) {
 	// setup
 	const input = `
@@ -242,7 +243,7 @@ func somefun14(c echo.Context) error {
 	return c.Redirect(http.StatusMovedPermanently, "<URL>")
 }
 	`
-	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0644)
+	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0o644)
 	require.NoError(t, err)
 
 	// run `go mod tidy`
@@ -345,7 +346,7 @@ func TestIsFmWorkStandardResponse_AllFalse(t *testing.T) {
 		return nil 
 	}
 	`
-	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0644)
+	err = os.WriteFile(filepath.Join(tmp, "main.go"), []byte(mainCode), 0o644)
 	require.NoError(t, err)
 
 	// run `go mod tidy`
@@ -938,7 +939,12 @@ func TestProcess_StandardResponse(t *testing.T) {
 	type UserLoginRequest struct {
 		Data int
 	}
-
+	// Generic response wrapper
+	type GResponse[T any] struct {
+		Success bool 
+		Data    T   
+		Error   string 
+	}
 	type Response struct {
 	}
 
@@ -1020,6 +1026,36 @@ func TestProcess_StandardResponse(t *testing.T) {
 			return c.JSON(200, []UserLoginRequest{}) //
 		case 22:
 			return c.JSON(200, []pkg.User{}) // 
+		case 23:
+			user := UserLoginRequest{Data: 42}
+			result := GResponse[UserLoginRequest]{
+				Success: true,
+				Data:    user,
+			}
+			return c.JSON(200, result) // Generic response with type parameter
+		case 24:
+			user := pkg.User{}
+			result := pkg.IR[pkg.User]{
+				Success: true,
+				Data:    user,
+			}
+			return c.JSON(200, result) // Generic response with type parameter
+		case 25:
+			user := UserLoginRequest{Data: 42}
+			return c.JSON(200, GResponse[UserLoginRequest]{
+				Success: true,
+				Data:    user,
+			}) // Generic response with type parameter
+		case 26:
+			user := pkg.User{}
+			return c.JSON(200, pkg.IR[pkg.User]{
+				Success: true,
+				Data:    user,
+			}) // Generic response with type parameter
+		case 27:
+			return c.JSON(200, pkg.IR[any]{
+				Success: true,
+			}) // Generic response with type parameter
 		default:
 			// Default JSON object
 			return c.JSON(200, struct {
@@ -1033,6 +1069,11 @@ func TestProcess_StandardResponse(t *testing.T) {
 	libCode := `
 	package pkg
 
+	type IR[T any] struct { // imported response 
+		Success bool 
+		Data    T   
+		Error   string 
+	}
 	type User struct {
 	}
 `
@@ -1061,8 +1102,8 @@ func TestProcess_StandardResponse(t *testing.T) {
 		}
 		return true
 	})
-
-	assert.Equal(t, 23, len(out))
+	totalTestCases := 28
+	assert.Equal(t, totalTestCases, len(out))
 	for _, o := range out {
 		assert.Equal(t, 200, o.StatusCode)
 	}
@@ -1094,14 +1135,19 @@ func TestProcess_StandardResponse(t *testing.T) {
 		{"json", "{object}", "pkg.User"},               // 20: JSON with pkg.User{}
 		{"json", "{array}", "[]main.UserLoginRequest"}, // 21: JSON with []UserLoginRequest{}
 		{"json", "{array}", "[]pkg.User"},              // 22: JSON with []pkg.User{}
+		{"json", "{object}", "main.GResponse[main.UserLoginRequest]"},
+		{"json", "{object}", "pkg.IR[pkg.User]"},
+		{"json", "{object}", "main.GResponse[main.UserLoginRequest]"},
+		{"json", "{object}", "pkg.IR[pkg.User]"},
+		{"json", "{object}", "pkg.IR[any]"},
 	}
-	for i := 0; i < 22; i++ {
+	for i := range totalTestCases - 1 {
 		assert.Equal(t, expected[i].ProduceType, out[i].ProduceType, "ProduceType mismatch at case %d", i+1)
 		assert.Equal(t, expected[i].SchemaType, out[i].SchemaType, "SchemaType mismatch at case %d", i+1)
 		assert.Equal(t, expected[i].ReturnDataType, out[i].ReturnDataType, "ReturnDataType mismatch at case %d", i+1)
 	}
-	// Default case (23rd)
-	assert.Equal(t, "json", out[22].ProduceType)
-	assert.Equal(t, "{object}", out[22].SchemaType)
-	assert.Equal(t, "___", out[22].ReturnDataType)
+	// Default case (25rd)
+	assert.Equal(t, "json", out[totalTestCases-1].ProduceType)
+	assert.Equal(t, "{object}", out[totalTestCases-1].SchemaType)
+	assert.Equal(t, "___", out[totalTestCases-1].ReturnDataType)
 }

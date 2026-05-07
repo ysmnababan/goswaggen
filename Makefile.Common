@@ -1,0 +1,37 @@
+# -------------------------------------------------------------------
+# Test
+# -------------------------------------------------------------------
+.PHONY: test
+test:
+	go test -v ./...
+
+.PHONY: test-race
+test-race:
+	go test -race -v ./...
+
+.PHONY: test-cover
+test-cover:
+	go test -race -v -coverprofile=coverage.out ./...
+
+.PHONY: test-integration
+test-integration:
+	go test -v -tags=integration ./...
+
+.PHONY: cover-html
+cover-html: test-cover
+	go tool cover -html=coverage.out -o coverage.html
+	xdg-open coverage.html
+	@echo "Coverage report: coverage.html"
+
+.PHONY: cover-func
+cover-func: test-cover
+	go tool cover -func=coverage.out
+
+.PHONY: test-failed
+test-failed:
+	@go test -race -v ./... 2>&1 | tee test.log | grep -A 20 "FAIL\|panic\|Error\|---FAIL"
+	@echo "Full log: test.log"
+
+.PHONY: test-fresh
+test-fresh:
+	go clean -testcache

@@ -1,5 +1,4 @@
 version: 2
-
 project_name: goswaggen
 
 before:
@@ -16,12 +15,14 @@ builds:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+      - arm64
     ldflags:
       - -s -w -X github.com/ysmnababan/goswaggen/internal/cmd.version={{.Version}}
 
 archives:
   - formats: [tar.gz]
-    # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
       {{- title .Os }}_
@@ -29,13 +30,12 @@ archives:
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}
       {{- if .Arm }}v{{ .Arm }}{{ end }}
-    # use zip for windows archives
     format_overrides:
       - goos: windows
         formats: [zip]
 
 checksum:
-  name_template: 'checksums.txt'
+  name_template: "checksums.txt"
 
 changelog:
   sort: asc
@@ -43,6 +43,22 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - "^style:"
+      - "^refactor:"
+      - "Merge pull request"
+      - "Merge branch"
+  groups:
+    - title: "🚀 New Features"
+      regexp: "^feat"
+      order: 0
+    - title: "🐛 Bug Fixes"
+      regexp: "^fix"
+      order: 1
+    - title: "⚙️ Other Changes"
+      order: 999
 
 release:
-  footer: >-
+  footer: |
+    See [CHANGELOG.md](https://github.com/ysmnababan/goswaggen/blob/master/CHANGELOG.md) for full details.

@@ -16,6 +16,7 @@
 3. **Generate Comment Blocks**
    - Uses Go's `token` package to determine the line above each function.
    - Constructs Swagger-compatible annotations like:
+
      ```go
      // @Summary Get user by ID
      // @Tags users

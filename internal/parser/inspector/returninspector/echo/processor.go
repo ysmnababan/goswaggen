@@ -122,8 +122,66 @@ func resolveTypeName(typeInfo *types.Info, ident *ast.Ident) string {
 	if !ok {
 		return vType.String()
 	}
+	args := named.TypeArgs()
+	genericType := ""
+	if args != nil { // for handling response with generic type, e.g. Response[User]
+		named := args.At(0).(*types.Named)
+		genericType = fmt.Sprintf("[%s.%s]", named.Obj().Pkg().Name(), named.Obj().Name())
+	}
+
 	typeName := named.Obj()
-	return fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
+	return fmt.Sprintf("%s.%s%s", typeName.Pkg().Name(), typeName.Name(), genericType)
+}
+
+func resolveGenericType(typeInfo *types.Info, expr *ast.IndexExpr) string {
+	// .Index
+	finalIdx, finalX := "", ""
+	idx := expr.Index
+	switch idxType := idx.(type) {
+	case *ast.SelectorExpr:
+		x := idxType.X.(*ast.Ident)
+		finalIdx = fmt.Sprintf("%s.%s", x.String(), idxType.Sel.String())
+	case *ast.Ident:
+		vn, ok := typeInfo.Types[idxType]
+		if !ok {
+			break
+		}
+		vType := vn.Type
+		if p, ok := vType.(*types.Pointer); ok {
+			vType = p.Elem()
+		}
+		named, ok := vType.(*types.Named)
+		if !ok {
+			finalIdx = vType.String()
+			break
+		}
+		typeName := named.Obj()
+		finalIdx = fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
+	default:
+	}
+
+	// .X
+	switch xType := expr.X.(type) {
+	case *ast.SelectorExpr:
+		x := xType.X.(*ast.Ident)
+		finalX = fmt.Sprintf("%s.%s", x.String(), xType.Sel.String())
+	case *ast.Ident:
+		vn := typeInfo.Types[xType]
+		vType := vn.Type
+		if p, ok := vType.(*types.Pointer); ok {
+			vType = p.Elem()
+		}
+		named, ok := vType.(*types.Named)
+		if !ok {
+			finalX = vType.String()
+			break
+		}
+
+		typeName := named.Obj()
+		finalX = fmt.Sprintf("%s.%s", typeName.Pkg().Name(), typeName.Name())
+	}
+
+	return fmt.Sprintf("%s[%s]", finalX, finalIdx)
 }
 
 func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
@@ -166,8 +224,36 @@ func (i *EchoReturnProcessor) resolvePayloadType(n ast.Expr) string {
 				return ""
 			}
 			return fmt.Sprintf("%s.%s", x.Name, cmpLit.Sel.String())
+		case *ast.IndexExpr:
+			return resolveGenericType(i.typesInfo, cmpLit)
+		case *ast.MapType:
+			key := ""
+			ident, ok := cmpLit.Key.(*ast.Ident)
+			if ok {
+				key = resolveTypeName(i.typesInfo, ident)
+			} else {
+				log.Printf("unsupported map key type: %T\n", cmpLit.Key)
+				key = "any"
+			}
+			value := ""
+			switch valType := cmpLit.Value.(type) {
+			case *ast.Ident:
+				value = resolveTypeName(i.typesInfo, valType)
+			case *ast.InterfaceType:
+				value = "interface{}"
+			default:
+				log.Printf("unsupported map value type: %T\n", valType)
+				value = "any"
+			}
+
+			cmpLitType := fmt.Sprintf(
+				"map[%s]%s", key, value,
+			)
+			fmt.Println(cmpLitType)
+			return cmpLitType
 		default:
-			return ""
+			cmpLitType := fmt.Sprintf("%T => ", cmpLit)
+			return cmpLitType
 		}
 	}
 	return ""
@@ -197,6 +283,7 @@ func (i *EchoReturnProcessor) resolveReturnResponse(ret *ast.ReturnStmt, isError
 			result.IsSuccess = true
 		}
 		result.SchemaType = resolveSchemeType(selExpr.Sel.Name, result.ReturnDataType)
+		fmt.Println(result)
 		return &result
 	}
 	result.ProduceType = "json"

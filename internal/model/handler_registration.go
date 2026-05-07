@@ -71,3 +71,7 @@ func (n *HandlerRegistration) GetPayloadInfos() []*PayloadInfo {
 func (n *HandlerRegistration) GetReturnResponses() []*ReturnResponse {
 	return n.ReturnResponse
 }
+
+func (n *HandlerRegistration) GetExistingCommentBlock() string {
+	return n.FuncDecl.Doc.Text()
+}

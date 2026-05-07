@@ -1,20 +1,32 @@
 # Changelog
 
-THIS IS JUST A TEMPLATE FOR NOW
 All notable changes to this project will be documented in this file.
 
-## [0.2.0] - 2025-07-08
+## [Unreleased]
+
+## [1.1.0] - 2026-05-07
+
 ### Added
-- CLI flag: `--dry-run` to preview changes
-- Support for Echo context detection
-- Basic support for query parameters
+
+- New `@Security` annotation for specifying security requirements
+- Support for preserving existing comments when generating annotations
+- Added function name as documentation title in generated swagger annotations
+- New `--path` flag to specify target file path for generated swagger annotations
 
 ### Changed
-- Improved formatting of inserted comments
-- Parser now supports nested folders
 
-## [0.1.0] - 2025-07-06
+- Changed config filename from `goswaggen.yaml` to `.goswaggen.yaml`
+
+### Fixed
+
+- Returning nothing when the response is generic type
+- Showing `-` instead of showing nothing for `-` tag response in swagger documentation
+- Returning nothing when the field is `time.Time` type
+- Missing `@Accept` for `c.FormValue` and `c.FormFile` parameters
+
+## [1.0.0] - 2025-07-15
+
 ### Added
-- Initial CLI scaffolding
-- Detect exported handler functions
-- Inject basic `@Summary` and `@Tags` annotations
+
+- Initial release
+- Basic swagger generation from Go source files
