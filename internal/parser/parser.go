@@ -101,19 +101,27 @@ func (p *parser) GetAllHandlers() map[string]*[]string {
 // Returns all matching handlers registration by name.
 // The func name can be the name only or combination of name and package name.
 // e.g. : name = `Login` or `auth.Login`.
-func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, error) {
+func (p *parser) getHandlerByFuncName(name string, fullpath string) (*model.HandlerRegistration, error) {
 	out := []*model.HandlerRegistration{}
 	handlerRegs := tracking.FindHandlerRegistration(p.ctx)
 
 	if strings.Contains(name, ".") {
 		for _, h := range handlerRegs {
-			if h.GetFuncNameWithPackage() == name {
+			targetPath := h.FilePath
+			if fullpath != "" {
+				targetPath = fullpath
+			}
+			if h.GetFuncNameWithPackage() == name && h.FilePath == targetPath {
 				out = append(out, h)
 			}
 		}
 	} else {
 		for _, h := range handlerRegs {
-			if h.GetFuncName() == name {
+			targetPath := h.FilePath
+			if fullpath != "" {
+				targetPath = fullpath
+			}
+			if h.GetFuncName() == name && h.FilePath == targetPath {
 				out = append(out, h)
 			}
 		}
@@ -133,8 +141,8 @@ func (p *parser) getHandlerByFuncName(name string) (*model.HandlerRegistration, 
 	return out[0], nil
 }
 
-func (p *parser) ExtractFuncHandlerInfo(name string) (*model.HandlerRegistration, error) {
-	handlerFunc, err := p.getHandlerByFuncName(name)
+func (p *parser) ExtractFuncHandlerInfo(name string, path string) (*model.HandlerRegistration, error) {
+	handlerFunc, err := p.getHandlerByFuncName(name, path)
 	if err != nil {
 		return nil, err
 	}

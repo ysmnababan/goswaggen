@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -75,7 +76,6 @@ func TestGetAllHandlers(t *testing.T) {
 }
 
 func TestNewParser_Success(t *testing.T) {
-
 	var err error
 	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
 	require.NoError(t, err)
@@ -216,6 +216,7 @@ func TestNewParser_WithoutVendorFileAndNoGoFile(t *testing.T) {
 	assert.Contains(t, err.Error(), "./...")
 	assert.Nil(t, parser)
 }
+
 func TestNewParser_WithoutVendorFileWithGoFile(t *testing.T) {
 	// t.Parallel()
 	var err error
@@ -364,17 +365,17 @@ func TestGetHandlerByFuncName_NoHandlerFound(t *testing.T) {
 
 	t.Run("without package name", func(t *testing.T) {
 		// execute
-		_, err = parser.getHandlerByFuncName("someHandler")
+		_, err = parser.getHandlerByFuncName("someHandler", "")
 
-		//assert
+		// assert
 		assert.ErrorContains(t, err, "no handler found")
 	})
 
 	t.Run("with package name", func(t *testing.T) {
 		// execute
-		_, err = parser.getHandlerByFuncName("main.someHandler")
+		_, err = parser.getHandlerByFuncName("main.someHandler", "")
 
-		//assert
+		// assert
 		assert.ErrorContains(t, err, "no handler found")
 	})
 }
@@ -430,13 +431,133 @@ func TestGetHandlerByFuncName_DuplicateHandler(t *testing.T) {
 	require.NoError(t, err)
 
 	// execute
-	_, err = parser.getHandlerByFuncName("HandlerTest")
+	_, err = parser.getHandlerByFuncName("HandlerTest", "")
 
-	//assert
+	// assert
 	fmt.Println(err.Error())
 	assert.ErrorContains(t, err, "multiple handlers found")
 	assert.ErrorContains(t, err, "main.HandlerTest")
 	assert.ErrorContains(t, err, "lib.HandlerTest")
+}
+
+func TestGetHandlerByFuncName_GetByPathAndPackage(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/lib"
+		"net/http"
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", HandlerTest)
+		e.GET("/test2", lib.HandlerTest)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func HandlerTest(e echo.Context) error {
+		return nil
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package lib
+
+	import (
+		"github.com/labstack/echo/v4"
+	)
+
+	func HandlerTest(c echo.Context) error {
+		return nil 
+	}
+	`
+	err = tmp.AddNewFileInPackage("lib", "lib.go", libCode)
+	require.NoError(t, err)
+
+	root := tmp.GetTempFile()
+	respCfg := config.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
+	require.NoError(t, err)
+
+	// execute
+	fullPath := filepath.Join(tmp.GetTempFile(), "lib/lib.go")
+	h, err := parser.getHandlerByFuncName("lib.HandlerTest", fullPath)
+
+	// assert
+	require.NoError(t, err)
+	assert.Equal(t, "lib.HandlerTest", h.GetFuncNameWithPackage())
+	assert.Equal(t, fullPath, h.FilePath)
+}
+
+func TestGetHandlerByFuncName_GetByPath(t *testing.T) {
+	tmp, err := testutil.NewTemporaryTestFile(t.TempDir())
+	require.NoError(t, err)
+	mainCode := `
+	package main
+
+	import (
+		"basicapi/lib"
+		"net/http"
+		"github.com/labstack/echo/v4"
+	)
+
+	func main() {
+		e := echo.New()
+		e.GET("/", func(c echo.Context) error {
+			return c.String(http.StatusOK, "Hello, World!")
+		})
+		e.GET("/test", HandlerTest)
+		e.GET("/test2", lib.HandlerTest)
+		e.Logger.Fatal(e.Start(":1323"))
+	}
+
+	func HandlerTest(e echo.Context) error {
+		return nil
+	}
+	`
+	err = tmp.AddNewFile("main.go", mainCode)
+	require.NoError(t, err)
+	libCode := `
+	package lib
+
+	import (
+		"github.com/labstack/echo/v4"
+	)
+
+	func HandlerTest(c echo.Context) error {
+		return nil 
+	}
+	`
+	err = tmp.AddNewFileInPackage("lib", "lib.go", libCode)
+	require.NoError(t, err)
+
+	root := tmp.GetTempFile()
+	respCfg := config.Config{
+		DefaultSuccessResponse: "default.Success",
+		DefaultFailureResponse: "default.Failure",
+	}
+	parser, err := NewParser(root, &respCfg)
+	require.NoError(t, err)
+
+	// execute
+	fullPath := filepath.Join(tmp.GetTempFile(), "lib/lib.go")
+	h, err := parser.getHandlerByFuncName("HandlerTest", fullPath)
+
+	// assert
+	require.NoError(t, err)
+	assert.Equal(t, "lib.HandlerTest", h.GetFuncNameWithPackage())
+	assert.Equal(t, fullPath, h.FilePath)
 }
 
 func TestExtractFuncHandlerInfo(t *testing.T) {
@@ -515,7 +636,7 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 	require.NoError(t, err)
 
 	// execute
-	h, err := p.ExtractFuncHandlerInfo("Login")
+	h, err := p.ExtractFuncHandlerInfo("Login", "")
 	require.NoError(t, err)
 
 	// assert
@@ -553,7 +674,7 @@ func TestExtractFuncHandlerInfo(t *testing.T) {
 	assert.Equal(t, 0, len(pi[1].FieldLists))
 	assert.Equal(t, "string", pi[1].ParamTypes)
 
-	//return
+	// return
 	for _, o := range ri {
 		assert.Equal(t, "{object}", o.SchemaType)
 		assert.Equal(t, "json", o.ProduceType)
