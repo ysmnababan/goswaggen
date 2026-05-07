@@ -136,7 +136,7 @@ func (p *parser) getHandlerByFuncName(name string, fullpath string) (*model.Hand
 		for _, h := range out {
 			fmt.Fprintf(&handlers, "    %s	: (%s)\n", h.GetFuncNameWithPackage(), h.FilePath)
 		}
-		return nil, fmt.Errorf("multiple handlers found\n%s", handlers.String())
+		return nil, fmt.Errorf("multiple handlers found\n%s\n", handlers.String())
 	}
 	return out[0], nil
 }

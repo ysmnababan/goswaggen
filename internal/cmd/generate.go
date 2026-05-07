@@ -57,6 +57,11 @@ var generateCmd = &cobra.Command{
 		err := Generate(payload)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "error while generating comment block: %v\n", err)
+			if strings.Contains(err.Error(), "multiple handlers found") {
+				fmt.Fprintf(os.Stderr, `
+Please consider changing the name, include package name, or provide the file path using -p flag to disambiguate
+`)
+			}
 			os.Exit(1)
 		}
 	},
@@ -90,7 +95,7 @@ func Generate(payload GeneratePayload) error {
 		}
 	} else {
 		_, err := fmt.Fprintf(payload.srcFile,
-			"Copy this swagger comment to your code: \n\n%v",
+			"Copy this swagger comment to your code: \n\n%v\n",
 			strings.Join(cmt, "\n"),
 		)
 		if err != nil {
